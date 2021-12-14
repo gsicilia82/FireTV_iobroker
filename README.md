@@ -11,7 +11,7 @@ Script zur Steuerung von FireTV Sticks
 
 ## Start
 
-<u>IN ARBEIT</u>
+**IN ARBEIT**
 
 * `adbkit` als Modul in Javascript-Instanz eingeben
 
@@ -33,7 +33,7 @@ Script zur Steuerung von FireTV Sticks
 
 ## Erläuterungen
 
-<u>IN ARBEIT</u>
+**IN ARBEIT**
 
 Anbei ein paar Worte zu den verschiedenen States:
 
@@ -53,11 +53,11 @@ Geänderte Timings werden mit Restart vom Skript übernommen. Dies kann über Bu
 
 ## ToDo's
 
-<u>IN ARBEIT</u>
+**IN ARBEIT**
 
-* Check ob adb lokale abgelegt wurde!
+* Check ob adb lokal abgelegt wurde!
 
-* Direkte Eingabe von Befehlen für Shell-Konsole ermöglichen
+* States in Console noch ohne Funktion. Direkte Eingabe von Befehlen für Shell-Konsole ermöglichen
 
 * Wenn Gerät aus JSON entfernt wird, sollte States auomatisch gelöscht werden
 
@@ -65,7 +65,12 @@ Geänderte Timings werden mit Restart vom Skript übernommen. Dies kann über Bu
 
 ## Changelog
 
+**Changelog v0.0.2 14.12.2021**
+
+- Automatische Online Prüfung ob Update vorliegt
+  
+
 **Changelog v0.0.1 14.12.2021**
 
 * Erste Version...
-* Unterkategorie "Console" in Objekten <u>noch ohne Funktion</u>
+* Unterkategorie "Console" in Objekten noch ohne Funktion
