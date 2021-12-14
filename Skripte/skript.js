@@ -7,14 +7,16 @@ const request = require("request");
  * 
  */
 
-let thisVersion = "v0.0.1"
+let thisVersion = "v0.0.2"
 
 let setPrae = `FireTV.`;
 let getPrae = `javascript.${instance}.${setPrae}`;
 
-
 let DefaultAdbPath = "/your/adb/path";
 let DefaultDevices = '{ "Wohnzimmer": "192.168.0.0", "Schlafzimmer": "192.168.0.0"}';
+
+//DefaultAdbPath = "/media/adbfiles/adb";
+//DefaultDevices = '{ "Wohnzimmer": "192.168.192.55", "Schlafzimmer": "192.168.192.33"}';
 
 let stoppingScript = false;
 
@@ -22,30 +24,40 @@ let stoppingScript = false;
 // PreDeclared as global object and later instanciated in main()
 let client = null;
 
-function checkUpdate(){
-    let urlGithub = 'https://api.github.com/repos/gsicilia82/Timer_iobroker/git/refs/tags';
-
-    request( { url: urlGithub, headers: { 'User-Agent': 'request'} }, (error, response, result) => {
-        let latest = JSON.parse( result).pop().ref.split("/")[2];
-        cl( latest);
-        if ( latest > thisVersion) {
-            console.log( "Update auf Version " + latest + " vorhanden!");
-        } else {
-            console.log( "Kein Script Update vorhanden.");
-        }
-    }).on("error", err => {console.warn( err) } );
-}
 
 function dbglog(){
     return getState( getPrae + "Log_Debug").val
 }
+
 
 function validateIpAddress( ip) {  
   if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test( ip)) {  
     return (true)  
   }
   return (false)  
-} 
+}
+
+
+function checkUpdate(){
+    let urlGithub = 'https://api.github.com/repos/gsicilia82/FireTV_iobroker/git/refs/tags';
+
+    request( { url: urlGithub, headers: { 'User-Agent': 'request'} }, (error, response, result) => {
+        let latest = JSON.parse( result).pop().ref.split("/")[2];
+        console.log( "Checking for Script Update...");
+        if ( latest > thisVersion) {
+            console.log( "Script Update available to version: " + latest);
+            setState( setPrae + "UpdateAvailable", true);
+        } else {
+            console.log( "No Script Update available.");
+            setState( setPrae + "UpdateAvailable", false);
+        }
+    }).on("error", err => {
+        console.warn( "Error on checking for updates:");
+        console.warn( err) 
+    });
+}
+let SchedUpdate = schedule("0 16 * * *", checkUpdate);
+
 
 function pushStates( JsStates, cb) {
     let ownJsStates = JSON.parse( JSON.stringify( JsStates));
@@ -668,6 +680,8 @@ async function deviceTracker(){
 
 function discharge(){
     stoppingScript = true;
+    clearSchedule( SchedUpdate);
+    SchedUpdate
     Tracker && Tracker.end(); // Check if Tracker is set. Possible unset with wrong configuration!
     Devices.forEach( Device => {
         Device.disconnect()
