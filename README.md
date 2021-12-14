@@ -7,7 +7,7 @@ Script zur Steuerung von FireTV Sticks
 * [Start](#start)
 * [Erläuterungen](#erläuterungen)
 * [ToDos](#todos)
-* [Changelog](changelog)
+* [Changelog](#changelog)
 
 ## Start
 
