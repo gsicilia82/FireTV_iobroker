@@ -7,7 +7,7 @@ const request = require("request");
  * 
  */
 
-let thisVersion = "v0.0.2"
+let thisVersion = "v0.0.3"
 
 let setPrae = `FireTV.`;
 let getPrae = `javascript.${instance}.${setPrae}`;
@@ -15,15 +15,15 @@ let getPrae = `javascript.${instance}.${setPrae}`;
 let DefaultAdbPath = "/your/adb/path";
 let DefaultDevices = '{ "Wohnzimmer": "192.168.0.0", "Schlafzimmer": "192.168.0.0"}';
 
-//DefaultAdbPath = "/media/adbfiles/adb";
-//DefaultDevices = '{ "Wohnzimmer": "192.168.192.55", "Schlafzimmer": "192.168.192.33"}';
-
 let stoppingScript = false;
 
 // Only one instance of adb client possible! Therefore not included in FireTV class (ADBKIT limitation!)
 // PreDeclared as global object and later instanciated in main()
 let client = null;
 
+let Devices = [];
+let MainSubscribtion = null;
+let Tracker = null;
 
 function dbglog(){
     return getState( getPrae + "Log_Debug").val
@@ -94,6 +94,7 @@ class States {
     _init(){
 
         this.StateDef = {
+            /*
             Command: {
                 id: this.set("Console.Command"),
                 initial: "",
@@ -122,6 +123,7 @@ class States {
                 common: { role: "state", read: true, write: false, name: "Console.ResultObj", type: "string" },
                 native: {}
             },
+            */
             StartPackage: {
                 id: this.set("Package.StartPackage"),
                 initial: "",
@@ -164,11 +166,18 @@ class States {
                 common: { role: "state", read: true, write: false, name: "Device State", type: "string"},
                 native: {}
             },
-            StopPlayer: {
-                id: this.set("StopPlayer"),
+            PlayerStop: {
+                id: this.set("PlayerStop"),
                 initial: false,
                 forceCreation: true,
                 common: { role: "button", read: true, write: true, name: `Stop Mediaplayer`, type: "boolean" },
+                native: {}
+            },
+            PlayerPause: {
+                id: this.set("PlayerPause"),
+                initial: false,
+                forceCreation: true,
+                common: { role: "button", read: true, write: true, name: `Pause/Play Mediaplayer`, type: "boolean" },
                 native: {}
             },
             Reboot: {
@@ -244,9 +253,7 @@ class States {
                 case "RunningPackage_Trigger":
                     this.write("RunningPackage_Trigger", false);
                     //this.write("RunningPackage", "");
-                    this.FireTV.getForegroundApp()
-                        .then( app => this.write("RunningPackage", app) )
-                        .catch( err => console.error( err) );
+                    this.FireTV.setForegroundApp()
                     break;
                 case "Reboot":
                     this.write("Reboot", false);
@@ -258,9 +265,14 @@ class States {
                     this.FireTV.shutdown()
                         .catch( err => console.error( err) );
                     break;
-                case "StopPlayer":
-                    this.write("StopPlayer", false);
+                case "PlayerStop":
+                    this.write("PlayerStop", false);
                     this.FireTV.sendKeyEvent( "KEYCODE_MEDIA_STOP")
+                        .catch( err => console.error( err) );
+                    break;
+                case "PlayerPause":
+                    this.write("PlayerPause", false);
+                    this.FireTV.sendKeyEvent( "KEYCODE_MEDIA_PLAY_PAUSE")
                         .catch( err => console.error( err) );
                     break;
             }
@@ -314,6 +326,7 @@ class FireTV {
         this.id = "";
         this.lastPlayTime = 0;
         this._connected = false;
+        this._deviceTrackerState = "";
         this.SchedConnCheck = null;
         this.SchedIdleCheck = null;
         this.Apps = {};
@@ -336,7 +349,8 @@ class FireTV {
             this.States.write( "Connected", status);
             // Read running package if connection established now
             if ( status) {
-                this.getForegroundApp().then( fApp => this.States.write( "RunningPackage", fApp))
+                console.log( `Device <${this.name}> (${this.ip}) connected!`);
+                this.setForegroundApp()
                 this.workConnected();
             } else {
                 if( !stoppingScript) this.workDisconnected();
@@ -346,28 +360,38 @@ class FireTV {
 
     get connected(){ return this._connected }
 
+    set deviceTrackerState( state){
+        this._deviceTrackerState = state;
+        if ( state === "device") this.connected = true;
+        else this.connected = false;
+    }
+
+    get deviceTrackerState(){ return this._deviceTrackerState }
+
 
     async _connect( attempts=1, ignoreError=true, waitAttempt=5000){
-        do{
-            try{
-                this.id = await client.connect( this.ip);
-                // Execute code below only if connected status was false and now changed to true 
-                if ( !this.connected) {
-                    console.log( `Device <${this.name}> (${this.ip}) connected!`);
-                    await sleep( 500);
-                    this.connected = true;
+        if ( !this.connected) {
+            do{
+                try{
+                    console.log( `Trying to connect Device <${this.name}> (${this.ip}) ...`);
+                    this.id = await client.connect( this.ip);
+                    await sleep( 1000);
+                    if ( this.deviceTrackerState === "offline" || this.deviceTrackerState === "unauthorized"){
+                        console.warn( `Debugging on Device <${this.name}> (${this.ip}) is maybe not authorized. Please confirm at TV in next 30s!`);
+                        await sleep( 30000);
+                    }
+                    attempts--;
                 }
-            }
-            catch( err) {
-                attempts--;
-                this.connected = false;
-                if( !ignoreError){
-                    console.warn( "CONNECTION_ERROR: " + err);
-                    console.warn( `Device <${this.name}> (${this.ip}) not connected! Remaining attempts = ${attempts}${ attempts > 0 ? `. Next attempt in ${waitAttempt/1000}s.` : `` }`);
+                catch( err) {
+                    attempts--;
+                    if( !ignoreError){
+                        console.warn( "CONNECTION_ERROR: " + err);
+                        console.warn( `Device <${this.name}> (${this.ip}) not connected! Powered Off? Remaining attempts = ${attempts}${ attempts > 0 ? `. Next attempt in ${waitAttempt/1000}s.` : `` }`);
+                    }
+                    if ( attempts > 0) await sleep( waitAttempt);
                 }
-                if ( attempts > 0) await sleep( waitAttempt);
-            }
-        } while( !this.connected && attempts > 0)
+            } while( !this.connected && attempts > 0) // this.connected will be set from DeviceTracker
+        }
 
         return new Promise((resolve, reject) => {
             if ( this.connected) resolve( this.id)
@@ -375,7 +399,9 @@ class FireTV {
         });
     }
 
-    workDisconnected(){
+
+    /** Set and Clear Schedules */
+    workDisconnected(){ 
         if( this.SchedConnCheck === null) { /** Set Schedule to try connecting device */
             this.SchedConnCheck = schedule( getState( getPrae + "Timing.CheckConnection").val, this.init.bind(this) );
             if(dbglog()) console.log( `Schedule "AutoConnect" set for <${this.name}> (${this.ip})`);
@@ -387,6 +413,7 @@ class FireTV {
         }
     }
 
+    /** Set and Clear Schedules */
     workConnected(){
         if( this.SchedConnCheck !== null){ /** Clear Schedule to connect */
             clearSchedule( this.SchedConnCheck);
@@ -394,14 +421,19 @@ class FireTV {
             if(dbglog()) console.log( `Schedule "AutoConnect" cleared for <${this.name}> (${this.ip})`);
         }
         if( this.SchedIdleCheck === null){ /** Set Schedule to get idle state */
-            this.SchedConnCheck = schedule( getState( getPrae + "Timing.CheckState").val, this.setPlayState.bind(this) );
+            this.SchedConnCheck = schedule( getState( getPrae + "Timing.CheckState").val, this.checkStateAndPackage.bind(this) );
             if(dbglog()) console.log( `Schedule "Check Idle State" set for <${this.name}> (${this.ip})`);
         }
     }
 
-    disconnect(){
+    checkStateAndPackage(){
+        this.setPlayState();
+        this.setForegroundApp();
+    }
+
+    clearDevice(){
         // disconnect bug in ADBKIT throws always error... therefore ignore error and resolve always
-        // disconnect() called only from stop-script function discharge()
+        // clearDevice() called only from stop-script function discharge()
         return new Promise(( resolve, reject) => {
             this.connected = false;
             clearSchedule( this.SchedConnCheck);
@@ -427,16 +459,19 @@ class FireTV {
         try{
             await this._connect( 3, false);
             let sOut = await this.shell( "dumpsys media_session | grep -m 1 'state=PlaybackState' ");
-            let myRe = /position=(-?\d+),\sbuffered/g; // Sometimes negative timestamps >>> "-?"
-            let matches = myRe.exec( sOut);
-            let actPlaytime = parseInt( matches[1] );
+            let regexPosition = /position=(-?\d+),\sbuffered/g; // Sometimes negative timestamps >>> "-?"
+            let MatchesPosition = regexPosition.exec( sOut);
+            let actPlaytime = parseInt( MatchesPosition[1] );
+            let regexSpeed = /speed=(\d+)\.0,\supdated/g;
+            let MatchesSpeed = regexSpeed.exec( sOut);
+            let actPlaySpeed = parseInt( MatchesSpeed[1] );
             if ( actPlaytime === 0){
                 // Device is playing content
                 this.States.write( "State", "idle");
-            } else if ( actPlaytime === this.lastPlayTime){
+            } else if ( actPlaySpeed === 0){
                 // Device is paused
                 this.States.write( "State", "paused");
-            } else if ( actPlaytime > this.lastPlayTime || actPlaytime < this.lastPlayTime){
+            } else{
                 // Device is idle
                 this.States.write( "State", "playing");
             }
@@ -455,7 +490,7 @@ class FireTV {
     }
 
     // Loop needed if App is started and needs time to be loaded (returns null at beginning)
-    async getForegroundApp( attempts=5, waitAttempt=1000){
+    async setForegroundApp( attempts=5, waitAttempt=1000){
         let foreGroundApp = "";
         do{
             try{
@@ -476,10 +511,8 @@ class FireTV {
             }
         } while( foreGroundApp === "" && attempts > 0)
 
-        return new Promise((resolve, reject) => {
-            if ( foreGroundApp !== "") resolve( foreGroundApp)
-            else reject( `Error by reading running package from device <${this.name}> (${this.ip})!`);
-        });
+        if ( foreGroundApp !== "") this.States.write( "RunningPackage", foreGroundApp);
+        else console.warn( `Error by reading running package from device <${this.name}> (${this.ip})!`);
     }
 
     get3rdPartyPackages(){
@@ -548,7 +581,7 @@ let BasicStates = {
     },
     Log_Debug: {
         id: setPrae + "Log_Debug",
-        initial: true,
+        initial: false,
         forceCreation: false,
         common: { role: "state", read: true, write: true, name: "Acivate Debug Loglevel", type: "boolean" },
         native: {}
@@ -592,41 +625,33 @@ let BasicStates = {
 
 
 
-let Devices = [];
-let MainSubscribtion = null;
 function main() {
 
-    MainSubscribtion = on({id: [ getPrae + "Devices", getPrae + "ADB_Path", getPrae + "RestartScript"], change: "ne", ack: false}, function (obj) {
-        // Reset State if button was pushed
-        if ( obj.id.split(".").pop() === "RestartScript") setState( setPrae + "RestartScript", false, true)
-        discharge();
-        setTimeout( () => {
-            unsubscribe( MainSubscribtion);
-            MainSubscribtion = null;
-            Devices = [];
-            main();
-        }, 1000)
-    });
-
-    let stateDevices = getPrae + "Devices";
-
-    if ( stateDevices === '{ "Wohnzimmer": "192.168.0.0", "Schlafzimmer": "192.168.0.0"}' ){
-        console.warn( `Please configure state <${stateDevices}> with your own device(s). Script will restart automatically by change of state!`);
-    }
+    let abortMain = false;
     let JsonDevices = {};
-    try{
-        JsonDevices = JSON.parse( getState( stateDevices).val);
-    } catch {
-        console.error( `Error parsing state <${stateDevices}> to JSON. Please check JSON syntax. Script will restart automatically by change of state!`);
-        return
+
+    // Validate JSON from devices
+    let stateDevices = getState( getPrae + "Devices").val;
+    if ( stateDevices === DefaultDevices ){
+        console.warn( `Please configure state <${stateDevices}> with your own device(s). Script will restart automatically by change of state!`);
+        abortMain = true;
+    } else {
+        try{
+            JsonDevices = JSON.parse( stateDevices);
+        } catch {
+            console.error( `Error parsing state <${stateDevices}> to JSON. Please check JSON syntax. Script will restart automatically by change of state!`);
+            abortMain = true;
+        }
     }
 
+    // Validate ADB path
     let adbPath = getState( getPrae + "ADB_Path").val;
-
-    if ( adbPath === "/your/adb/path"){
-        console.warn( `Error: <${getPrae + "ADB_Path"}> is empty. Please configure ADB path. Script will restart automatically by change of state!`);
-        return
+    if ( adbPath === DefaultAdbPath){
+        console.warn( `ADB path: <${getPrae + "ADB_Path"}> is set to default. Please configure ADB path. Script will restart automatically by change of state!`);
+        abortMain = true;
     }
+
+    if ( abortMain) return
 
     client = adb.createClient({ bin: adbPath });
     
@@ -645,34 +670,66 @@ function main() {
     
 }
 // Create basic states and call main function
-pushStates( BasicStates, main);
+pushStates( BasicStates, () => {
+
+    MainSubscribtion = on({id: [ getPrae + "Devices", getPrae + "ADB_Path", getPrae + "RestartScript"], change: "ne", ack: false}, function (obj) {
+        // Reset State if button was pushed
+        if ( obj.id.split(".").pop() === "RestartScript") setState( setPrae + "RestartScript", false, true)
+        discharge();
+        setTimeout( () => {
+            stoppingScript = false;
+            Devices = [];
+            main();
+        }, 1000)
+    });
+
+    main();
+});
 
 
 
-let Tracker = null
 async function deviceTracker(){
 
     function tracking(){
-         // DevID example: {"id":"192.168.192.33:5555","type":"device"}
+        console.log( "Device Tracking started...")
+
+         // DevID connected:    {"id":"192.168.192.33:5555","type":"device"}
+         // DevID unauthorized: {"id":"192.168.192.33:5555","type":"unauthorized"}
+         // DevID offline:      {"id":"192.168.192.33:5555","type":"offline"}
+         // Offline = Powered on, but also not authorized!
+
         Tracker.on('add', DevID => {
             if (dbglog()) console.log( "Device Tracker: added " + JSON.stringify(DevID) )
+            Devices.forEach( Device => {
+                if ( Device.ip === DevID.id.split(":")[0] ) {
+                    if (dbglog()) console.log( "Added Device found in List" )
+                    Device.deviceTrackerState = DevID.type;
+                }
+            })
         })
         Tracker.on('remove', DevID => {
             if (dbglog()) console.log( "Device Tracker: removed " + JSON.stringify(DevID) )
             Devices.forEach( Device => {
                 if ( Device.ip === DevID.id.split(":")[0] ) {
                     if (dbglog()) console.log( "Removed Device found in List" )
-                    Device.connected = false;
+                    Device.deviceTrackerState = "";
                 }
             })
         })
         Tracker.on('change', DevID => {
             if (dbglog()) console.log( "Device Tracker: changed " + JSON.stringify(DevID) )
+            Devices.forEach( Device => {
+                if ( Device.ip === DevID.id.split(":")[0] ) {
+                    if (dbglog()) console.log( "Changed Device found in List" )
+                    Device.deviceTrackerState = DevID.type;
+                }
+            })
         })
         Tracker.on('end', () => {
             if (dbglog()) console.log('Device Tracking stopped')
         })
     }
+    
     Tracker = await client.trackDevices(); // Tracker Object needed to be stopped at "discharge()"
     tracking();
 }
@@ -684,7 +741,7 @@ function discharge(){
     SchedUpdate
     Tracker && Tracker.end(); // Check if Tracker is set. Possible unset with wrong configuration!
     Devices.forEach( Device => {
-        Device.disconnect()
+        Device.clearDevice()
             .then( DevID => { if ( DevID !== "") console.log( `Device with ID <${DevID}> disconnected`) })
             .catch( err => console.error(err) )
     })
