@@ -39,22 +39,33 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
 
 ## Erläuterungen
 
-**IN ARBEIT**
+
 
 Anbei ein paar Worte zu den verschiedenen States:
 
-* FireTV.Timing.CheckConnection
+* FireTV.Timing.CheckIfConnected
   
-  * Wenn ein Gerät nicht verbunden ist (z.B. ausgeschaltet, ADB-Debugging aus oder nicht freigegeben), wird es in diesem Intervall (schedule) versucht es zu verbinden
-
-* FireTV.Timing.CheckState
-  
-  * Nur wenn ein Gerät verbunden ist , wird in diesem Intervall (schedule inkl. Sekunden!) folgendes versucht:
+  * In diesem Intervall/Schedule werden die verbundenen FireTV nach idle/pause/play und aktuell laufendem Package abgefragt.
     
-    * Status: playing, pause und idle `javascript.X.FireTV.192_168_Y_Z.State`
-    * Aktuell laufende App unter `javascript.X.FireTV.192_168_Y_Z.Package.RunningPackage`
+    (Das Intervall sollte bei nicht weniger als 15s liegen, da fehlgeschlagene Befehle bereits 10s für ein Timeout benötigen)
+    
+    
+* FireTV.Timing.CheckIfNotConnected
+  * Wenn ein Gerät nicht verbunden ist, wird in diesem Intervall/Schedule versucht eine Verbindung aufzubauen.
+
+Status: playing, pause und idle unter `javascript.X.FireTV.192_168_Y_Z.State` Aktuell laufende App unter `javascript.X.FireTV.192_168_Y_Z.Package.RunningPackage`
 
 Geänderte Timings werden mit Restart vom Skript übernommen. Dies kann über Button in States erfolgen.
+
+
+
+* FireTV.192_168_Y_Z.ReadInstalledPackages
+  
+  * Wenn erstmalig nach Skript-Start ein FireTV verbunden wird, werden die installierten Packages ausgelesen und als DropDown in StartPackage und StopPackage hinterlegt. Dies kann zur Laufzeit mit einem Klick auf diesen Button forciert werden
+
+* FireTV.192_168_Y_Z.RunningPackageTrigger
+  
+  * Mit dem Timing unter CheckIfConnected wird auch das aktuel laufende Package aktualisiert. Mit diesem Button kann es manuell angestoßen werden.
 
 ***
 
