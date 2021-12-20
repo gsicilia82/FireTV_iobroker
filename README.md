@@ -70,7 +70,7 @@ Geänderte Timings werden mit Restart vom Skript übernommen. Dies kann über Bu
 
 ## Changelog
 
-**Changelog v0.0.3 19.12.2021**
+**Changelog v0.0.5 19.12.2021**
 
 - Connected Status über DeviceTracker ermitteln
 - Status UND RunningPackage im Intervall auslesen
