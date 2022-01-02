@@ -2,7 +2,7 @@
 
 Script zur Steuerung von FireTV Sticks
 
-**Dies ist kein Adapter** sondern ein Skript. Es muss aus der Datei /Skripte/skript.js kopiert und in ein neuen JS-Skript einer beliebigen Javascript-Instanz kopiert werden
+**Dies ist kein Adapter sondern ein JS-Skript. Es muss aus der Datei /Skripte/skript.js kopiert und in ein neuen JS-Skript einer beliebigen Javascript-Instanz kopiert werden**
 
 * [Start](#start)
 * [Erläuterungen](#erläuterungen)
@@ -21,6 +21,8 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
   ![ADBKIT hinzufügen](./ReadMe_Images/adbkit.png)
 
 * Datei `adb` aus Pfad ./ADB lokal auf ioBroker-Host ablegen
+
+* In ioBroker ein neues Javascript unter dem Reiter "Skripte" erstellen und aus diesem Repo den Inhalt der Datei Skripte/skript.js dort hinein kopieren  
 
 * Skript starten (für die nachfolgenden Schritte werden vom Skript auch entsprechende Hinweise im Log ausgegeben)
   
