@@ -18,6 +18,7 @@ Am FireTV Stick muss das ADB-Debugging aktiviert werden unter:
 Die nachfolgenden Schritte erfolgen am ioBroker:
 
 * `adbkit` als Modul in Javascript-Instanz eingeben
+  ![ADBKIT hinzufügen](./ReadMe_Images/adbkit.png)
 
 * Datei `adb` aus Pfad ./ADB lokal auf ioBroker-Host ablegen
 
@@ -27,7 +28,7 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
   
   * ADB-Pfad in State `javascript.X.FireTV.ADB_Path` eingeben/korrigieren
   
-  * Eigene FireTV Geräte in State `javascript.X.FireTV.Devices` als JSON-String eingeben. Zwei <u>Beispiele</u> sind bereits hinterlegt.
+  * Eigene FireTV Geräte in State `javascript.X.FireTV.Devices` als JSON-String eingeben. Zwei <u>Beispiele</u> sind bereits hinterlegt (Fake-IPs).
   
   * Für jedes hinterlegte FireTV Gerät werden zusätzliche States angelegt 
   
@@ -39,33 +40,30 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
 
 ## Erläuterungen
 
-
-
 Anbei ein paar Worte zu den verschiedenen States:
 
-* FireTV.Timing.CheckIfConnected
+* FireTV.Timing.**CheckIfConnected**
   
-  * In diesem Intervall/Schedule werden die verbundenen FireTV nach idle/pause/play und aktuell laufendem Package abgefragt.
+  * In diesem Intervall (in Sekunden) werden die verbundenen FireTV nach idle/pause/play und aktuell laufendem Package abgefragt.
     
     (Das Intervall sollte bei nicht weniger als 15s liegen, da fehlgeschlagene Befehle bereits 10s für ein Timeout benötigen)
-    
-    
-* FireTV.Timing.CheckIfNotConnected
-  * Wenn ein Gerät nicht verbunden ist, wird in diesem Intervall/Schedule versucht eine Verbindung aufzubauen.
 
-Status: playing, pause und idle unter `javascript.X.FireTV.192_168_Y_Z.State` Aktuell laufende App unter `javascript.X.FireTV.192_168_Y_Z.Package.RunningPackage`
+* FireTV.Timing.**CheckIfNotConnected**
+  
+  * Wenn ein Gerät nicht verbunden ist, wird in diesem Intervall (in Sekunden) versucht eine Verbindung aufzubauen.
 
-Geänderte Timings werden mit Restart vom Skript übernommen. Dies kann über Button in States erfolgen.
+* FireTV.192_168_Y_Z.**State**
+  
+  * Status: playing, paused und idle werden zurückgemeldet
+    (DAZN meldet den Status leider nicht unter Android Media-Sessions zurück)
 
-
-
-* FireTV.192_168_Y_Z.ReadInstalledPackages
+* FireTV.192_168_Y_Z.**ReadInstalledPackages**
   
   * Wenn erstmalig nach Skript-Start ein FireTV verbunden wird, werden die installierten Packages ausgelesen und als DropDown in StartPackage und StopPackage hinterlegt. Dies kann zur Laufzeit mit einem Klick auf diesen Button forciert werden
 
-* FireTV.192_168_Y_Z.RunningPackageTrigger
+* FireTV.192_168_Y_Z.**State_Trigger**
   
-  * Mit dem Timing unter CheckIfConnected wird auch das aktuel laufende Package aktualisiert. Mit diesem Button kann es manuell angestoßen werden.
+  * Mit diesem Button kann das Auslesen vom Status manuell angestoßen werden. Auch die aktuell laufende App wird aktualisiert
 
 ***
 
@@ -80,6 +78,12 @@ Geänderte Timings werden mit Restart vom Skript übernommen. Dies kann über Bu
 ***
 
 ## Changelog
+
+**Changelog v0.0.6 02.01.2022**
+
+* Intervall statt Schedules für Prüfung der Verbindung und Status der Geräte
+* Verschiedene Error-Handlings, wenn Gerät Offline geht
+* Verschiedene States gelöscht und neu hinzugefügt
 
 **Changelog v0.0.5 19.12.2021**
 
