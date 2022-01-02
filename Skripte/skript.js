@@ -9,7 +9,7 @@ const request = require("request");
  * 
  */
 
-let thisVersion = "v0.0.6"
+let thisVersion = "v0.0.7"
 
 let setPrae = `FireTV.`;
 let getPrae = `javascript.${instance}.${setPrae}`;
@@ -69,9 +69,12 @@ function pushStates( JsStates, cb) {
         let ArrStateNames = Object.keys( ownJsStates);
         let actStateName = ArrStateNames[0]
         let State = ownJsStates[ actStateName];
-        createState( State.id, State.initial, State.forceCreation, State.common, State.native, () => {
-            delete ownJsStates[ actStateName];
-            pushStates( ownJsStates, cb);
+        createState( State.id, State.common, State.native, () => {
+            setTimeout( ()=>{ /** Timeout needed if REDIS is used! createState() with initial value not possible! */
+                if ( State.forceCreation || getState( State.id).val === null) setState( State.id, State.initial, true);
+                delete ownJsStates[ actStateName];
+                pushStates( ownJsStates, cb);
+            }, 200)
         });
     }
 }
@@ -729,6 +732,8 @@ function main() {
 
     let abortMain = false;
     let JsonDevices = {};
+
+    checkUpdate();
 
     // Validate JSON from devices
     let stateDevices = getState( getPrae + "Devices").val;
