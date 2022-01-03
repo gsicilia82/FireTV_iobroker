@@ -9,7 +9,7 @@ const request = require("request");
  * 
  */
 
-let thisVersion = "v0.0.7"
+let thisVersion = "v0.0.8"
 
 let setPrae = `FireTV.`;
 let getPrae = `javascript.${instance}.${setPrae}`;
@@ -62,20 +62,32 @@ let SchedUpdate = schedule("0 16 * * *", checkUpdate);
 
 
 function pushStates( JsStates, cb) {
+    let actStateName, State;
+    let create = () => {
+        createState( State.id, State.common, State.native, () => {
+            setTimeout( ()=>{ 
+                if ( getState( State.id).val === null) setState( State.id, State.initial, true);
+                delete ownJsStates[ actStateName];
+                pushStates( ownJsStates, cb);
+            }, 200)
+        });
+    }
     let ownJsStates = JSON.parse( JSON.stringify( JsStates));
     if ( Object.keys( ownJsStates).length === 0){
         cb();
     } else {
         let ArrStateNames = Object.keys( ownJsStates);
-        let actStateName = ArrStateNames[0]
-        let State = ownJsStates[ actStateName];
-        createState( State.id, State.common, State.native, () => {
-            setTimeout( ()=>{ /** Timeout needed if REDIS is used! createState() with initial value not possible! */
-                if ( State.forceCreation || getState( State.id).val === null) setState( State.id, State.initial, true);
-                delete ownJsStates[ actStateName];
-                pushStates( ownJsStates, cb);
-            }, 200)
-        });
+        actStateName = ArrStateNames[0]
+        State = ownJsStates[ actStateName];
+        let exists = existsState( State.id);
+        // Workaround needed if REDIS is used! createState() with initial value not possible!
+        if ( exists && State.forceCreation){
+            deleteState( State.id, ()=>{
+                create();
+            });
+        } else {
+            create();
+        }
     }
 }
 
@@ -230,7 +242,7 @@ class States {
     }
 
     subscribe(){
-        this.Subscribtion = on({id: this.StateSubs, change: "any", ack: false}, ( obj) => {
+        this.Subscribtion = on({id: this.StateSubs, change: "ne", ack: false}, ( obj) => {
             /**
              * ###################################################
              * Subscribtion for states to trigger FireTV functions
@@ -241,67 +253,83 @@ class States {
             if (dbglog()) console.log(`State triggered for command: ${cmd}`)
             switch ( cmd) {
                 case "StartPackage":
-                    this.write("StartPackage", "");
                     this.FireTV.connect()
                         .then( () => this.FireTV.startApp( value) )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "StartPackage") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "StartPackage");
+                            this.write("StartPackage", "");
+                        })
                     break;
                 case "StopPackage":
-                    this.write("StopPackage", "");
                     this.FireTV.connect()
                         .then( () => this.FireTV.stopApp( value) )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "StopPackage") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "StopPackage");
+                            this.write("StopPackage", "");
+                        })
                     break;
                 case "StopForegroundPackage":
-                    this.write("StopForegroundPackage", false);
                     this.FireTV.connect()
                         .then( () => this.FireTV.setForegroundApp() )
                         .then( () => this.FireTV.stopApp( this.read( "RunningPackage")) )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "StopPackage") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "StopPackage");
+                            this.write("StopForegroundPackage", false);
+                        })
                     break;
                 case "ReadInstalledPackages":
-                    this.write("ReadInstalledPackages", false);
                     this.FireTV.connect()
                         .then( () => this.FireTV.get3rdPartyPackages() )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "ReadInstalledPackages") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "ReadInstalledPackages");
+                            this.write("ReadInstalledPackages", false);
+                        })
                     break;
                 case "State_Trigger":
-                    this.write("State_Trigger", false);
                     this.FireTV.connect()
-                        .then( () => this.FireTV.checkStateAndPackage() )
+                        .then( () => this.FireTV.checkStateAndPackage() ) // disconnect included in checkStateAndPackage()
                         .catch( err => console.error( err) )
+                        .finally( ()=> this.write("State_Trigger", false) )
                     break;
                 case "Reboot":
-                    this.write("Reboot", false);
                     this.FireTV.connect()
                         .then( () => this.FireTV.reboot() )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "Reboot") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "Reboot");
+                            this.write("Reboot", false);
+                        })
                     break;
                 case "Sleep":
-                    this.write("Sleep", false);
                     this.FireTV.connect()
                         .then( () => this.FireTV.sleep() )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "Sleep") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "Sleep");
+                            this.write("Sleep", false);
+                        })
                     break;
                 case "PlayerStop":
-                    this.write("PlayerStop", false);
                     this.FireTV.connect()
                         .then( () => this.FireTV.sendKeyEvent( "KEYCODE_MEDIA_STOP") )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "PlayerStop") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "PlayerStop");
+                            this.write("PlayerStop", false);
+                        })
                     break;
                 case "PlayerPause":
-                    this.write("PlayerPause", false);
                     this.FireTV.connect()
                         .then( () => this.FireTV.sendKeyEvent( "KEYCODE_MEDIA_PLAY_PAUSE") )
                         .catch( err => console.error( err) )
-                        .finally( ()=> this.FireTV.disconnect( "PlayerPause") )
+                        .finally( ()=> {
+                            this.FireTV.disconnect( "PlayerPause");
+                            this.write("PlayerPause", false);
+                        })
                     break;
             }
         });
@@ -685,14 +713,14 @@ let BasicStates = {
     Log_Debug: {
         id: setPrae + "Log_Debug",
         initial: false,
-        forceCreation: false,
+        forceCreation: true,
         common: { role: "state", read: true, write: true, name: "Acivate Debug Loglevel", type: "boolean" },
         native: {}
     },
     Update: {
         id: setPrae + "UpdateAvailable",
         initial: false,
-        forceCreation: false,
+        forceCreation: true,
         common: { role: "state", read: true, write: true, name: "Script Update Available", type: "boolean" },
         native: {}
     },
