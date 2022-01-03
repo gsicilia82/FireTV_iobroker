@@ -81,12 +81,13 @@ Anbei ein paar Worte zu den verschiedenen States:
 
 ## Changelog
 
+**Changelog v0.0.9 03.01.2022**
+
+- Script optimized regarding states handling
+
 **Changelog v0.0.8 02.01.2022**
 
 - Bugfix createState() in case of REDIS database
-
-
-
 * Intervall statt Schedules für Prüfung der Verbindung und Status der Geräte
 * Verschiedene Error-Handlings, wenn Gerät Offline geht
 * Verschiedene States gelöscht und neu hinzugefügt

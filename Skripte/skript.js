@@ -4,15 +4,17 @@ const request = require("request");
 /**
  * 
  * Script zur Steuerung von FireTV Sticks und zum Auslesen verschiedener Zustände
+ * https://github.com/gsicilia82/FireTV_iobroker
  * 
- * Warte für DeviceTracker bevor connect()? Manchmal träge Erkennung vom Tracker
+ * Bitte nichts unterhalb von diesem Kommentar verändern. Jegliche Konfiguration erfolgt innerhalb der erstellten States
+ * Hauptpfad ist: "javascript.X.FireTV" (X = Instanz, beliebig)
  * 
  */
 
-let thisVersion = "v0.0.8"
 
-let setPrae = `FireTV.`;
-let getPrae = `javascript.${instance}.${setPrae}`;
+let thisVersion = "v0.0.9"
+
+let praefixStates = `javascript.${instance}.FireTV.`;
 
 let DefaultAdbPath = "/your/adb/path";
 let DefaultDevices = '{ "Wohnzimmer": "192.168.0.0", "Schlafzimmer": "192.168.0.0"}';
@@ -28,7 +30,7 @@ let MainSubscribtion = null;
 let Tracker = null;
 
 function dbglog(){
-    return getState( getPrae + "Log_Debug").val
+    return getState( praefixStates + "Log_Debug").val
 }
 
 
@@ -48,10 +50,10 @@ function checkUpdate(){
         console.log( "Checking for Script Update...");
         if ( latest > thisVersion) {
             console.log( "Script Update available to version: " + latest);
-            setState( setPrae + "UpdateAvailable", true);
+            setState( praefixStates + "UpdateAvailable", true);
         } else {
             console.log( "No Script Update available.");
-            setState( setPrae + "UpdateAvailable", false);
+            setState( praefixStates + "UpdateAvailable", false);
         }
     }).on("error", err => {
         console.warn( "Error on checking for updates:");
@@ -100,8 +102,7 @@ class States {
     constructor( FireTV) {
         this.FireTV = FireTV;
         this.devPart = this.FireTV.ip.replace(/\./g, '_');
-        this.setPrae = `${setPrae}${this.devPart}.`
-        this.getPrae = `${getPrae}${this.devPart}.`
+        this.praefixStates = `${praefixStates}${this.devPart}.`;
         this.StateDef;  // Includes whole state definitions
         this.StateSubs = []; // Includes each single state for Subscribtion
         this.Subscribtion = null;
@@ -111,115 +112,116 @@ class States {
     _init(){
 
         this.StateDef = {
+            /* id's will be filled to complete id including instance inside loop below */
             /*
             Command: {
-                id: this.set("Console.Command"),
+                id: "Console.Command",
                 initial: "",
                 forceCreation: false,
-                common: { role: "state", read: true, write: true, name: "Console.Command", type: "string" },
+                common: { role: "state", read: true, write: true, name: `Shell Command ${this.FireTV.name}`, type: "string" },
                 native: {}
             },
             ResultRaw: {
-                id: this.set("Console.ResultRaw"),
+                id: "Console.ResultRaw",
                 initial: "",
                 forceCreation: false,
-                common: { role: "state", read: true, write: false, name: "Console.ResultRaw", type: "string" },
+                common: { role: "state", read: true, write: false, name: `ResultRaw ${this.FireTV.name}`, type: "string" },
                 native: {}
             },
             ResultArray: {
-                id: this.set("Console.ResultArray"),
+                id: "Console.ResultArray",
                 initial: "[]",
                 forceCreation: false,
-                common: { role: "state", read: true, write: false, name: "Console.ResultArray", type: "string" },
+                common: { role: "state", read: true, write: false, name: `ResultArray ${this.FireTV.name}`, type: "string" },
                 native: {}
             },
             ResultObj: {
-                id: this.set("Console.ResultObj"),
+                id: "Console.ResultObj",
                 initial: "{}",
                 forceCreation: false,
-                common: { role: "state", read: true, write: false, name: "Console.ResultObj", type: "string" },
+                common: { role: "state", read: true, write: false, name: `ResultObj ${this.FireTV.name}`, type: "string" },
                 native: {}
             },
             */
             StartPackage: {
-                id: this.set("Package.StartPackage"),
+                id: "Package.StartPackage",
                 initial: "",
                 forceCreation: true,
-                common: { role: "state", read: true, write: true, name: "StartPackage", type: "string", states: {} },
+                common: { role: "state", read: true, write: true, name: `StartPackage ${this.FireTV.name}`, type: "string", states: {} },
                 native: {}
             },
             StopPackage: {
-                id: this.set("Package.StopPackage"),
+                id: "Package.StopPackage",
                 initial: "",
                 forceCreation: true,
-                common: { role: "state", read: true, write: true, name: "StopPackage", type: "string", states: {}},
+                common: { role: "state", read: true, write: true, name: `StopPackage ${this.FireTV.name}`, type: "string", states: {}},
                 native: {}
             },
             StopForegroundPackage: {
-                id: this.set("Package.StopForegroundPackage"),
+                id: "Package.StopForegroundPackage",
                 initial: false,
                 forceCreation: true,
-                common: { role: "button", read: true, write: true, name: "StopForegroundPackage", type: "boolean"},
+                common: { role: "button", read: true, write: true, name: `StopForegroundPackage ${this.FireTV.name}`, type: "boolean"},
                 native: {}
             },
             RunningPackage: {
-                id: this.set("Package.RunningPackage"),
+                id: "Package.RunningPackage",
                 initial: "",
                 forceCreation: true,
-                common: { role: "state", read: true, write: false, name: "RunningPackage", type: "string"},
+                common: { role: "state", read: true, write: false, name: `RunningPackage ${this.FireTV.name}`, type: "string"},
                 native: {}
             },
             ReadInstalledPackages: {
-                id: this.set("Package.ReadInstalledPackages"),
+                id: "Package.ReadInstalledPackages",
                 initial: false,
                 forceCreation: true,
-                common: { role: "button", read: true, write: true, name: "ReadInstalledPackages", type: "boolean"},
+                common: { role: "button", read: true, write: true, name: `ReadInstalledPackages ${this.FireTV.name}`, type: "boolean"},
                 native: {}
             },
             State: {
-                id: this.set("State"),
+                id: "State",
                 initial: "",
                 forceCreation: true,
-                common: { role: "state", read: true, write: false, name: "Device State", type: "string"},
+                common: { role: "state", read: true, write: false, name: `Device State ${this.FireTV.name}`, type: "string"},
                 native: {}
             },
             State_Trigger: {
-                id: this.set("State_Trigger"),
+                id: "State_Trigger",
                 initial: false,
                 forceCreation: true,
-                common: { role: "button", read: true, write: true, name: "State_Trigger", type: "boolean"},
+                common: { role: "button", read: true, write: true, name: `State_Trigger ${this.FireTV.name}`, type: "boolean"},
                 native: {}
             },
             PlayerStop: {
-                id: this.set("PlayerStop"),
+                id: "PlayerStop",
                 initial: false,
                 forceCreation: true,
-                common: { role: "button", read: true, write: true, name: `Stop Mediaplayer`, type: "boolean" },
+                common: { role: "button", read: true, write: true, name: `Stop Mediaplayer ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             PlayerPause: {
-                id: this.set("PlayerPause"),
+                id: "PlayerPause",
                 initial: false,
                 forceCreation: true,
-                common: { role: "button", read: true, write: true, name: `Pause/Play Mediaplayer`, type: "boolean" },
+                common: { role: "button", read: true, write: true, name: `Pause/Play Mediaplayer ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             Reboot: {
-                id: this.set("Reboot"),
+                id: "Reboot",
                 initial: false,
                 forceCreation: true,
                 common: { role: "button", read: true, write: true, name: `Reboot ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             Sleep: {
-                id: this.set("Sleep"),
+                id: "Sleep",
                 initial: false,
                 forceCreation: true,
                 common: { role: "button", read: true, write: true, name: `Sleep ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             Connected: {
-                id: this.set("Connected"),
+                id: "Connected",
                 initial: false,
                 forceCreation: true,
                 common: { role: "state", read: true, write: false, name: `Connection state ${this.FireTV.name}`, type: "boolean" },
@@ -228,9 +230,9 @@ class States {
         };
 
         Object.keys( this.StateDef).forEach( ele => {
-            let complete = `javascript.${instance}.${ this.StateDef[ ele].id}`;
-            this.StateDef[ ele].complete = complete;
-            this.StateSubs.push( complete);
+            let completeID = `${this.praefixStates}${ this.StateDef[ ele].id}`;
+            this.StateDef[ ele].id = completeID;
+            this.StateSubs.push( completeID);
         });
 
         pushStates( this.StateDef, () => {
@@ -367,11 +369,6 @@ class States {
     read( jsKey) {
         return getState( this.StateDef[ jsKey].id).val
     }
-
-    set( state) { return `${this.setPrae}${state}` }
-
-    get( state) { return `${this.getPrae}${state}` }
-
 }
 
 
@@ -439,10 +436,10 @@ class FireTV {
             clearInterval( this.IntvlCheckState);
             this.IntvlCheckState = null;
         }
-        let intvlTime = getState( getPrae + "Timing.CheckIfNotConnected").val * 1000;
+        let intvlTime = getState( praefixStates + "Timing.CheckIfNotConnected").val * 1000;
         if ( intvlTime < 5000){
             intvlTime = 5000;
-            setState( setPrae + "Timing.CheckIfNotConnected", 5);
+            setState( praefixStates + "Timing.CheckIfNotConnected", 5);
             console.log( "<CheckIfNotConnected> was lower 5s. Set now to 5s!")
         }
         this.IntvlCheckState = setInterval( this.checkStateAndPackage.bind(this), intvlTime);
@@ -456,10 +453,10 @@ class FireTV {
             clearInterval( this.IntvlCheckState);
             this.IntvlCheckState = null;
         }
-        let intvlTime = getState( getPrae + "Timing.CheckIfConnected").val * 1000;
+        let intvlTime = getState( praefixStates + "Timing.CheckIfConnected").val * 1000;
         if ( intvlTime < 5000){
             intvlTime = 5000;
-            setState( setPrae + "Timing.CheckIfConnected", 5);
+            setState( praefixStates + "Timing.CheckIfConnected", 5);
             console.log( "<CheckIfConnected> was lower 5s. Set now to 5s!")
         }
         this.IntvlCheckState = setInterval( this.checkStateAndPackage.bind(this), intvlTime);
@@ -697,56 +694,56 @@ class FireTV {
 
 let BasicStates = {
     CheckIfNotConnected: {
-        id: setPrae + "Timing.CheckIfNotConnected",
+        id: praefixStates + "Timing.CheckIfNotConnected",
         initial: 60,
         forceCreation: false,
         common: { role: "state", read: true, write: true, unit: "s", name: "Check for Connection", type: "number" },
         native: {}
     },
     CheckIfConnected: {
-        id: setPrae + "Timing.CheckIfConnected",
+        id: praefixStates + "Timing.CheckIfConnected",
         initial: 15,
         forceCreation: false,
         common: { role: "state", read: true, write: true, unit: "s", name: "Check for actual status", type: "number" },
         native: {}
     },
     Log_Debug: {
-        id: setPrae + "Log_Debug",
+        id: praefixStates + "Log_Debug",
         initial: false,
         forceCreation: true,
         common: { role: "state", read: true, write: true, name: "Acivate Debug Loglevel", type: "boolean" },
         native: {}
     },
     Update: {
-        id: setPrae + "UpdateAvailable",
+        id: praefixStates + "UpdateAvailable",
         initial: false,
         forceCreation: true,
         common: { role: "state", read: true, write: true, name: "Script Update Available", type: "boolean" },
         native: {}
     },
     Version: {
-        id: setPrae + "Version",
+        id: praefixStates + "Version",
         initial: thisVersion,
         forceCreation: true,
         common: { role: "state", read: true, write: true, name: "Script Version", type: "string" },
         native: {}
     },
     Devices: {
-        id: setPrae + "Devices",
+        id: praefixStates + "Devices",
         initial: DefaultDevices,
         forceCreation: false,
         common: { role: "state", read: true, write: true, name: "Config your Devices", type: "string" },
         native: {}
     },
     ADB_Path: {
-        id: setPrae + "ADB_Path",
+        id: praefixStates + "ADB_Path",
         initial: DefaultAdbPath,
         forceCreation: false,
         common: { role: "state", read: true, write: true, name: "Config your Devices", type: "string" },
         native: {}
     },
     RestartScript: {
-        id: setPrae + "RestartScript",
+        id: praefixStates + "RestartScript",
         initial: false,
         forceCreation: true,
         common: { role: "button", read: true, write: true, name: "Restart Script", type: "boolean"},
@@ -764,7 +761,7 @@ function main() {
     checkUpdate();
 
     // Validate JSON from devices
-    let stateDevices = getState( getPrae + "Devices").val;
+    let stateDevices = getState( praefixStates + "Devices").val;
     if ( stateDevices === DefaultDevices ){
         console.warn( `Please configure state <${stateDevices}> with your own device(s). Script will restart automatically by change of state!`);
         abortMain = true;
@@ -778,9 +775,9 @@ function main() {
     }
 
     // Validate ADB path
-    let adbPath = getState( getPrae + "ADB_Path").val;
+    let adbPath = getState( praefixStates + "ADB_Path").val;
     if ( adbPath === DefaultAdbPath){
-        console.warn( `ADB path: <${getPrae + "ADB_Path"}> is set to default. Please configure ADB path. Script will restart automatically by change of state!`);
+        console.warn( `ADB path in state <${praefixStates + "ADB_Path"}> is set to default. Please configure ADB path. Script will restart automatically by change of state!`);
         abortMain = true;
     }
 
@@ -806,11 +803,11 @@ function main() {
 // Create basic states and call main function
 pushStates( BasicStates, () => {
 
-    MainSubscribtion = on({id: [ getPrae + "Devices", getPrae + "ADB_Path", getPrae + "RestartScript", getPrae + "Timing.CheckIfConnected", getPrae + "Timing.CheckIfNotConnected"], change: "ne", ack: false}, function (obj) {
+    MainSubscribtion = on({id: [ praefixStates + "Devices", praefixStates + "ADB_Path", praefixStates + "RestartScript", praefixStates + "Timing.CheckIfConnected", praefixStates + "Timing.CheckIfNotConnected"], change: "ne", ack: false}, function (obj) {
         let triggeredState = obj.id.split(".").pop();
         console.log( "State changed: " + triggeredState + "; restarting Script...");
         // Reset State if button was pushed
-        if ( triggeredState === "RestartScript") setState( setPrae + "RestartScript", false, true)
+        if ( triggeredState === "RestartScript") setState( praefixStates + "RestartScript", false, true)
         discharge();
         setTimeout( () => {
             stoppingScript = false;
