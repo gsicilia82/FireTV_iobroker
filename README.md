@@ -67,6 +67,12 @@ Anbei ein paar Worte zu den verschiedenen States:
   
   * Mit diesem Button kann das Auslesen vom Status manuell angestoßen werden. Auch die aktuell laufende App wird aktualisiert
 
+
+
+Übersicht der verschiedenen States:
+
+![States Übersicht](./ReadMe_Images/states_overview.png)
+
 ***
 
 ## ToDo's
