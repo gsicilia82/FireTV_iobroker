@@ -48,7 +48,7 @@ Anbei ein paar Worte zu den verschiedenen States:
   
   * In diesem Intervall (in Sekunden) werden die verbundenen FireTV nach idle/pause/play und aktuell laufendem Package abgefragt.
     
-    (Das Intervall sollte bei nicht weniger als 15s liegen, da fehlgeschlagene Befehle bereits 10s für ein Timeout benötigen)
+    (Das Intervall sollte bei nicht weniger als 10s liegen, da fehlgeschlagene Befehle bereits 10s für ein Timeout benötigen)
 
 * FireTV.Timing.**CheckIfNotConnected**
   
@@ -81,7 +81,7 @@ Anbei ein paar Worte zu den verschiedenen States:
 
 ## Changelog
 
-**Changelog v0.0.9 03.01.2022**
+**Changelog v0.0.10 04.01.2022**
 
 - Script optimized regarding states handling
 

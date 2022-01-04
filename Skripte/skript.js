@@ -12,7 +12,11 @@ const request = require("request");
  */
 
 
-let thisVersion = "v0.0.9"
+
+// Version of Script
+let thisMajor = 0;
+let thisMinor = 0;
+let thisPatch = 10;
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
@@ -27,7 +31,8 @@ let client = null;
 
 let Devices = [];
 let MainSubscribtion = null;
-let Tracker = null;
+
+let thisVersion = `v${thisMajor}.${thisMinor}.${thisPatch}`
 
 function dbglog(){
     return getState( praefixStates + "Log_Debug").val
@@ -46,9 +51,13 @@ function checkUpdate(){
     let urlGithub = 'https://api.github.com/repos/gsicilia82/FireTV_iobroker/git/refs/tags';
 
     request( { url: urlGithub, headers: { 'User-Agent': 'request'} }, (error, response, result) => {
-        let latest = JSON.parse( result).pop().ref.split("/")[2];
         console.log( "Checking for Script Update...");
-        if ( latest > thisVersion) {
+        let latest = JSON.parse( result).pop().ref.split("/")[2];
+        let splitLatest = latest.substring(1).split(".");
+        let major = parseInt( splitLatest[0] );
+        let minor = parseInt( splitLatest[1] );
+        let patch = parseInt( splitLatest[2] );
+        if ( major > thisMajor || minor > thisMinor || patch > thisPatch) {
             console.log( "Script Update available to version: " + latest);
             setState( praefixStates + "UpdateAvailable", true);
         } else {
@@ -255,6 +264,11 @@ class States {
             if (dbglog()) console.log(`State triggered for command: ${cmd}`)
             switch ( cmd) {
                 case "StartPackage":
+                    if ( value === this.read( "RunningPackage") ){
+                        console.log( "Selected Package is already running, nothing to do!");
+                        this.write("StartPackage", "");
+                        break;
+                    }
                     this.FireTV.connect()
                         .then( () => this.FireTV.startApp( value) )
                         .catch( err => console.error( err) )
@@ -466,7 +480,7 @@ class FireTV {
         if(dbglog()) console.log( `Triggered checkStateAndPackage for <${this.name}> (${this.ip})`);
         // Prevent running multiple threads from this function...
         if ( this.checkIsRunning) {
-            if(dbglog()) console.log( `Triggered checkStateAndPackage aborted for <${this.name}> (${this.ip}). Still running old thread!`);
+            if(dbglog()) console.log( `Triggered checkStateAndPackage aborted for <${this.name}> (${this.ip}). Already running old thread!`);
             return Promise.resolve();
         }
         if ( !this.isInitialized) this.init()
