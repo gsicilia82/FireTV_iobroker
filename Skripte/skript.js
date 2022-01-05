@@ -16,7 +16,7 @@ const request = require("request");
 // Version of Script
 let thisMajor = 0;
 let thisMinor = 0;
-let thisPatch = 12;
+let thisPatch = 13;
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
