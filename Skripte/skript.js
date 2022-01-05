@@ -7,7 +7,7 @@ const request = require("request");
  * https://github.com/gsicilia82/FireTV_iobroker
  * 
  * Bitte nichts unterhalb von diesem Kommentar verändern. Jegliche Konfiguration erfolgt innerhalb der erstellten States
- * Hauptpfad ist: "javascript.X.FireTV" (X = Instanz, beliebig)
+ * Hauptpfad ist: "javascript.X.FireTV" (X = Instanz = beliebig)
  * 
  */
 
@@ -16,7 +16,7 @@ const request = require("request");
 // Version of Script
 let thisMajor = 0;
 let thisMinor = 0;
-let thisPatch = 10;
+let thisPatch = 12;
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
@@ -33,6 +33,8 @@ let Devices = [];
 let MainSubscribtion = null;
 
 let thisVersion = `v${thisMajor}.${thisMinor}.${thisPatch}`
+
+let maxShellLogOutLength = 500;
 
 function dbglog(){
     return getState( praefixStates + "Log_Debug").val
@@ -62,7 +64,7 @@ function checkUpdate(){
             setState( praefixStates + "UpdateAvailable", true);
         } else {
             console.log( "No Script Update available.");
-            setState( praefixStates + "UpdateAvailable", false);
+            setState( praefixStates + "UpdateAvailable", false, true);
         }
     }).on("error", err => {
         console.warn( "Error on checking for updates:");
@@ -104,8 +106,9 @@ function pushStates( JsStates, cb) {
 
 
 /**
- * Creates device specific states
- * Subscribtion to states including callback
+ * ####################################################################################
+ * Creates device specific states; Subscribtion to states including callback
+ * ####################################################################################
  */
 class States {
     constructor( FireTV) {
@@ -121,7 +124,7 @@ class States {
     _init(){
 
         this.StateDef = {
-            /* id's will be filled to complete id including instance inside loop below */
+            /* id's are filled with complete id including instance inside loop below */
             /*
             Command: {
                 id: "Console.Command",
@@ -177,7 +180,7 @@ class States {
                 id: "Package.RunningPackage",
                 initial: "",
                 forceCreation: true,
-                common: { role: "state", read: true, write: false, name: `RunningPackage ${this.FireTV.name}`, type: "string"},
+                common: { role: "state", read: true, write: true, name: `RunningPackage ${this.FireTV.name}`, type: "string"},
                 native: {}
             },
             ReadInstalledPackages: {
@@ -255,9 +258,7 @@ class States {
     subscribe(){
         this.Subscribtion = on({id: this.StateSubs, change: "ne", ack: false}, ( obj) => {
             /**
-             * ###################################################
              * Subscribtion for states to trigger FireTV functions
-             * ###################################################
              */
             let cmd = obj.id.split(".").pop();
             let value = obj.state.val;
@@ -298,7 +299,7 @@ class States {
                     break;
                 case "ReadInstalledPackages":
                     this.FireTV.connect()
-                        .then( () => this.FireTV.get3rdPartyPackages() )
+                        .then( () => this.FireTV.get3rdPartyPackages() ).then(cl)
                         .catch( err => console.error( err) )
                         .finally( ()=> {
                             this.FireTV.disconnect( "ReadInstalledPackages");
@@ -387,7 +388,9 @@ class States {
 
 
 /**
+ * ####################################################################################
  * Contains Device specific attributes and methods
+ * ####################################################################################
  */
 class FireTV {
     
@@ -398,7 +401,6 @@ class FireTV {
         this.isBusy = false;
         this._connected = false;
         this.isInitialized = false;
-        this._deviceTrackerState = "";
         this.checkIsRunning = false;
         this.IntvlCheckState = null;
         this.Apps = {};
@@ -409,6 +411,7 @@ class FireTV {
         if(dbglog()) console.log( `Init <${this.name}> (${this.ip})...`);
         this.connect( true)
             .then( () => this.get3rdPartyPackages() )
+            .then( () => this.startIobrokerOnFire() )
             .then( () => {
                 this.isInitialized = true;
                 this.checkStateAndPackage( true);
@@ -428,6 +431,8 @@ class FireTV {
                 console.log( `Device <${this.name}> (${this.ip}) connected!`);
                 this.workConnected();
             } else {
+                console.log( `Device <${this.name}> (${this.ip}) disconnected!`);
+                this.isInitialized = false;
                 if( !stoppingScript) this.workDisconnected();
             }
         }
@@ -435,26 +440,17 @@ class FireTV {
 
     get connected(){ return this._connected }
 
-
-    set deviceTrackerState( state){
-        this._deviceTrackerState = state;
-        if ( state === "device") this.connected = true;
-    }
-
-    get deviceTrackerState(){ return this._deviceTrackerState }
-
-
     workDisconnected(){ 
-        if(dbglog()) console.log( `Running WorkDisconnected for <${this.name}> (${this.ip})`);
+        console.log( `Running WorkDisconnected for <${this.name}> (${this.ip})`);
         if( this.IntvlCheckState){
             clearInterval( this.IntvlCheckState);
             this.IntvlCheckState = null;
         }
         let intvlTime = getState( praefixStates + "Timing.CheckIfNotConnected").val * 1000;
-        if ( intvlTime < 5000){
-            intvlTime = 5000;
-            setState( praefixStates + "Timing.CheckIfNotConnected", 5);
-            console.log( "<CheckIfNotConnected> was lower 5s. Set now to 5s!")
+        if ( intvlTime < 10000){
+            intvlTime = 10000;
+            setState( praefixStates + "Timing.CheckIfNotConnected", 10);
+            console.log( "<CheckIfNotConnected> was lower 10s. Set now to 10s!")
         }
         this.IntvlCheckState = setInterval( this.checkStateAndPackage.bind(this), intvlTime);
         this.States.write( "State", "");
@@ -462,16 +458,16 @@ class FireTV {
     }
 
     workConnected(){
-        if(dbglog()) console.log( `Running WorkConnected for <${this.name}> (${this.ip})`);
+        console.log( `Running WorkConnected for <${this.name}> (${this.ip})`);
         if( this.IntvlCheckState){
             clearInterval( this.IntvlCheckState);
             this.IntvlCheckState = null;
         }
         let intvlTime = getState( praefixStates + "Timing.CheckIfConnected").val * 1000;
-        if ( intvlTime < 5000){
-            intvlTime = 5000;
-            setState( praefixStates + "Timing.CheckIfConnected", 5);
-            console.log( "<CheckIfConnected> was lower 5s. Set now to 5s!")
+        if ( intvlTime < 10000){
+            intvlTime = 10000;
+            setState( praefixStates + "Timing.CheckIfConnected", 10);
+            console.log( "<CheckIfConnected> was lower 10s. Set now to 10s!")
         }
         this.IntvlCheckState = setInterval( this.checkStateAndPackage.bind(this), intvlTime);
     }
@@ -483,8 +479,9 @@ class FireTV {
             if(dbglog()) console.log( `Triggered checkStateAndPackage aborted for <${this.name}> (${this.ip}). Already running old thread!`);
             return Promise.resolve();
         }
-        if ( !this.isInitialized) this.init()
-        else if ( calledFromInit){
+        if ( !this.isInitialized){
+            this.init();
+        } else if ( calledFromInit){
             this.checkIsRunning = true;
             return this.setPlayState()
                 .then( ()=> this.setForegroundApp() )
@@ -524,9 +521,10 @@ class FireTV {
         }
 
         return new Promise((resolve, reject) => {
-            // this.connected will be set from DeviceTracker
-            if ( connected) resolve( this.id)
-            else {
+            if ( connected){
+                this.connected = true;
+                resolve( this.id);
+            } else {
                 this.connected = false;
                 reject( `Device <${this.name}> (${this.ip}) not connected! Powered Off? Not authorized?`);
             }
@@ -535,26 +533,27 @@ class FireTV {
 
     async connectWork(){
         let connected = false;
+        let ArrWaitMS = [ 0, 30000, 5000, 2000, 1000, 500];
         let loops = 5;
+        let sleepTime = 500;
         let error = "";
         try{
             do{
                 if(dbglog()) console.log( `Device <${this.name}> (${this.ip}) looping to connect! Remaining loops: ${loops}`);
-                let sleepTime = 500;
                 let Devices = await client.listDevices();
                 Devices.forEach( Device => {
                     if ( Device.id === this.id){
-                        this.deviceTrackerState = Device.type;
                         if ( Device.type === "device") connected = true;
                         else {
                             if(dbglog()) console.log( `Device <${this.name}> (${this.ip}) not connected! Device state: ${Device.type}`);
-                            console.log( `Device <${this.name}> (${this.ip}) not connected! Not authorized? Waiting 30s for authorization...`);
-                            sleepTime = 30000;
+                            if( loops>0) console.log( `Device <${this.name}> (${this.ip}) not connected [=${Device.type}]! Not authorized or offline? Waiting ${ArrWaitMS[ loops]/1000}s ...`);
+                            sleepTime = ArrWaitMS[ loops];
                         }
+                        loops--;
                     }
                 })
                 if ( !connected) await sleep( sleepTime);
-            } while( !connected && loops > 0)
+            } while( !connected && loops >= 0)
 
         }
         catch ( err){
@@ -563,7 +562,7 @@ class FireTV {
         
         return new Promise((resolve, reject) => {
             if ( error !== "") reject( error);
-            else resolve( true);
+            else resolve( connected);
         });
     }
 
@@ -572,6 +571,7 @@ class FireTV {
         return new Promise(( resolve, reject) => {
             this.connected = false;
             clearInterval( this.IntvlCheckState);
+            this.IntvlCheckState = null;
             this.States.unsubscribe();
             // disconnect bug in ADBKIT throws always error... therefore ignore error and resolve always
             client.disconnect( this.id).catch( err => Promise.resolve( this.id) );
@@ -592,8 +592,9 @@ class FireTV {
             client.shell( this.id, cmd)
                 .then( adb.util.readAll)
                 .then( bOut => {
-                    if(dbglog()) console.log( `Result Shell_CMD <${this.name}> (${this.ip}): ${bOut.toString()}`);
-                    resolve( bOut.toString() )
+                    let sOut = bOut.toString();
+                    if(dbglog()) console.log( `Result Shell_CMD <${this.name}> (${this.ip}): ${ ( sOut.length > maxShellLogOutLength ? sOut.substring(0,maxShellLogOutLength)+" ..." : sOut ) }`);
+                    resolve( sOut )
                 })
                 .catch( err => reject( err) )
         });
@@ -670,12 +671,26 @@ class FireTV {
         });
     }
 
+    startIobrokerOnFire(){
+        return new Promise((resolve, reject) => {
+            if ( this.Apps.hasOwnProperty( "com.iobroker.onfire")){
+                console.log( `Found installed package "com.iobroker.onfire" on device <${this.name}> (${this.ip}). Starting it ...`)
+                this.shell( "pm grant com.iobroker.onfire android.permission.PACKAGE_USAGE_STATS")
+                    .then( () => this.startApp( "com.iobroker.onfire") )
+                    .then( () => resolve( true) )
+                    .catch( err => reject( err) )
+            } else {
+                resolve( false)
+            }
+        });
+    }
+
     sendKeyEvent( keyEvent){
         return this.shell( "input keyevent " + keyEvent)
     }
 
     startApp( packName){
-        console.log( `Starting package <${packName}>`);
+        console.log( `Starting package "${packName}" on device <${this.name}> (${this.ip}).`);
         if( this.Apps.hasOwnProperty( packName)){
             return this.shell( ` monkey --pct-syskeys 0 -p ${packName} 1`)
                         .then( () => sleep( 1000) )
@@ -724,7 +739,7 @@ let BasicStates = {
     Log_Debug: {
         id: praefixStates + "Log_Debug",
         initial: false,
-        forceCreation: true,
+        forceCreation: false,
         common: { role: "state", read: true, write: true, name: "Acivate Debug Loglevel", type: "boolean" },
         native: {}
     },
@@ -732,7 +747,7 @@ let BasicStates = {
         id: praefixStates + "UpdateAvailable",
         initial: false,
         forceCreation: true,
-        common: { role: "state", read: true, write: true, name: "Script Update Available", type: "boolean" },
+        common: { role: "state", read: true, write: false, name: "Script Update Available", type: "boolean" },
         native: {}
     },
     Version: {

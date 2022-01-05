@@ -67,8 +67,6 @@ Anbei ein paar Worte zu den verschiedenen States:
   
   * Mit diesem Button kann das Auslesen vom Status manuell angestoßen werden. Auch die aktuell laufende App wird aktualisiert
 
-
-
 Übersicht der verschiedenen States:
 
 ![States Übersicht](./ReadMe_Images/states_overview.png)
@@ -86,6 +84,10 @@ Anbei ein paar Worte zu den verschiedenen States:
 ***
 
 ## Changelog
+
+**Changelog v0.0.12 05.01.2022**
+
+- Scripts starts custom App "com.iobroker.onfire" on FireTV at established connection. Actual running package will be pushed automatically
 
 **Changelog v0.0.10 04.01.2022**
 
