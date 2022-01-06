@@ -16,7 +16,7 @@ const request = require("request");
 // Version of Script
 let thisMajor = 0;
 let thisMinor = 0;
-let thisPatch = 13;
+let thisPatch = 14;
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
@@ -107,7 +107,7 @@ function pushStates( JsStates, cb) {
 
 /**
  * ####################################################################################
- * Creates device specific states; Subscribtion to states including callback
+ * Creates device specific states; Subscribtion to states including "callback"
  * ####################################################################################
  */
 class States {
@@ -257,98 +257,14 @@ class States {
 
     subscribe(){
         this.Subscribtion = on({id: this.StateSubs, change: "ne", ack: false}, ( obj) => {
-            /**
-             * Subscribtion for states to trigger FireTV functions
-             */
-            let cmd = obj.id.split(".").pop();
+            let id = obj.id;
             let value = obj.state.val;
-            if (dbglog()) console.log(`State triggered for command: ${cmd}`)
-            switch ( cmd) {
-                case "StartPackage":
-                    if ( value === this.read( "RunningPackage") ){
-                        console.log( "Selected Package is already running, nothing to do!");
-                        this.write("StartPackage", "");
-                        break;
-                    }
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.startApp( value) )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "StartPackage");
-                            this.write("StartPackage", "");
-                        })
-                    break;
-                case "StopPackage":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.stopApp( value) )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "StopPackage");
-                            this.write("StopPackage", "");
-                        })
-                    break;
-                case "StopForegroundPackage":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.setForegroundApp() )
-                        .then( () => this.FireTV.stopApp( this.read( "RunningPackage")) )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "StopPackage");
-                            this.write("StopForegroundPackage", false);
-                        })
-                    break;
-                case "ReadInstalledPackages":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.get3rdPartyPackages() ).then(cl)
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "ReadInstalledPackages");
-                            this.write("ReadInstalledPackages", false);
-                        })
-                    break;
-                case "State_Trigger":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.checkStateAndPackage() ) // disconnect included in checkStateAndPackage()
-                        .catch( err => console.error( err) )
-                        .finally( ()=> this.write("State_Trigger", false) )
-                    break;
-                case "Reboot":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.reboot() )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "Reboot");
-                            this.write("Reboot", false);
-                        })
-                    break;
-                case "Sleep":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.sleep() )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "Sleep");
-                            this.write("Sleep", false);
-                        })
-                    break;
-                case "PlayerStop":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.sendKeyEvent( "KEYCODE_MEDIA_STOP") )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "PlayerStop");
-                            this.write("PlayerStop", false);
-                        })
-                    break;
-                case "PlayerPause":
-                    this.FireTV.connect()
-                        .then( () => this.FireTV.sendKeyEvent( "KEYCODE_MEDIA_PLAY_PAUSE") )
-                        .catch( err => console.error( err) )
-                        .finally( ()=> {
-                            this.FireTV.disconnect( "PlayerPause");
-                            this.write("PlayerPause", false);
-                        })
-                    break;
-            }
+            Object.keys( this.StateDef).forEach( key => {
+                if ( this.StateDef[ key].id === id){
+                    if (dbglog()) console.log(`State triggered for device <${this.FireTV.name}> (${this.FireTV.ip}) with key: ${key}`)
+                    this.FireTV.stateEvent( key, value);
+                }
+            });
         });
     }
 
@@ -429,19 +345,23 @@ class FireTV {
             // Read running package if connection established now
             if ( status) {
                 console.log( `Device <${this.name}> (${this.ip}) connected!`);
+                console.log( `Start Intervall WorkConnected for <${this.name}> (${this.ip})`);
                 this.workConnected();
             } else {
                 console.log( `Device <${this.name}> (${this.ip}) disconnected!`);
                 this.isInitialized = false;
-                if( !stoppingScript) this.workDisconnected();
+                if( !stoppingScript){
+                    console.log( `Start Intervall WorkDisconnected for <${this.name}> (${this.ip})`);
+                    this.workDisconnected();
+                }
             }
         }
     }
 
     get connected(){ return this._connected }
 
-    workDisconnected(){ 
-        console.log( `Running WorkDisconnected for <${this.name}> (${this.ip})`);
+    workDisconnected(){
+        if(dbglog()) console.log( `Running WorkDisconnected for <${this.name}> (${this.ip})`);
         if( this.IntvlCheckState){
             clearInterval( this.IntvlCheckState);
             this.IntvlCheckState = null;
@@ -458,7 +378,7 @@ class FireTV {
     }
 
     workConnected(){
-        console.log( `Running WorkConnected for <${this.name}> (${this.ip})`);
+        if(dbglog()) console.log( `Running WorkConnected for <${this.name}> (${this.ip})`);
         if( this.IntvlCheckState){
             clearInterval( this.IntvlCheckState);
             this.IntvlCheckState = null;
@@ -714,6 +634,95 @@ class FireTV {
     reboot(){
         console.log( `Rebooting device <${this.name}> (${this.ip})`);
         return this.shell( "reboot")
+    }
+
+    stateEvent( key, value){
+        switch ( key) {
+            case "StartPackage":
+                if ( value === this.States.read( "RunningPackage") ){
+                    console.log( "Selected Package is already running, nothing to do!");
+                    this.States.write("StartPackage", "");
+                    break;
+                }
+                this.connect()
+                    .then( () => this.startApp( value) )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "StartPackage");
+                        this.States.write("StartPackage", "");
+                    })
+                break;
+            case "StopPackage":
+                this.connect()
+                    .then( () => this.stopApp( value) )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "StopPackage");
+                        this.States.write("StopPackage", "");
+                    })
+                break;
+            case "StopForegroundPackage":
+                this.connect()
+                    .then( () => this.setForegroundApp() )
+                    .then( () => this.stopApp( this.States.read( "RunningPackage")) )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "StopPackage");
+                        this.States.write("StopForegroundPackage", false);
+                    })
+                break;
+            case "ReadInstalledPackages":
+                this.connect()
+                    .then( () => this.get3rdPartyPackages() ).then(cl)
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "ReadInstalledPackages");
+                        this.States.write("ReadInstalledPackages", false);
+                    })
+                break;
+            case "State_Trigger":
+                this.connect()
+                    .then( () => this.checkStateAndPackage() ) // disconnect included in checkStateAndPackage()
+                    .catch( err => console.error( err) )
+                    .finally( ()=> this.States.write("State_Trigger", false) )
+                break;
+            case "Reboot":
+                this.connect()
+                    .then( () => this.reboot() )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "Reboot");
+                        this.States.write("Reboot", false);
+                    })
+                break;
+            case "Sleep":
+                this.connect()
+                    .then( () => this.sleep() )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "Sleep");
+                        this.States.write("Sleep", false);
+                    })
+                break;
+            case "PlayerStop":
+                this.connect()
+                    .then( () => this.sendKeyEvent( "KEYCODE_MEDIA_STOP") )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "PlayerStop");
+                        this.States.write("PlayerStop", false);
+                    })
+                break;
+            case "PlayerPause":
+                this.connect()
+                    .then( () => this.sendKeyEvent( "KEYCODE_MEDIA_PLAY_PAUSE") )
+                    .catch( err => console.error( err) )
+                    .finally( ()=> {
+                        this.disconnect( "PlayerPause");
+                        this.States.write("PlayerPause", false);
+                    })
+                break;
+        }
     }
 }
 

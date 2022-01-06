@@ -85,6 +85,10 @@ Anbei ein paar Worte zu den verschiedenen States:
 
 ## Changelog
 
+**Changelog v0.0.14 06.01.2022**
+
+- Script classes optimized
+
 **Changelog v0.0.13 05.01.2022**
 
 - Scripts starts custom App "com.iobroker.onfire" on FireTV at established connection. Actual running package will be pushed automatically
