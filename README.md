@@ -103,7 +103,9 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
   <img src="./ReadMe_Images/task_modification.jpg" width="400">
 
 - Ist die Anpassung fertig, kann das Projekt als App exportiert werden. Einfach das Projekt-Icon gedrückt halten, bis das Kontextmenü sichtbar wird. Hier "Export" und danach "As App" auswählen. Tasker benötigt nun eine weitere App aus dem Playstore ( App Factory o.ä.). Wenn diese geladen ist, muss es wie folgt eingestellt werden.
+
   <img src="./ReadMe_Images/app_config.jpg" width="400">
+  
   Der App-Factory Vorgang wird gestartet, indem nundie Zurück-Taste auf dem Smartphone gedrückt wird.
   Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt. Diese kann nun auf dem FireTV installiert werden.
 
