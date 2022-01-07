@@ -99,10 +99,11 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
 - Import eines Projekt erfolgt, indem auf der Tasker-Startseite lange auf das Haus-Symbol gedrückt wird, anschließend "Import Project" auswählen. Anschließend das hier geladene Projekt-File auswählen
 
 - Im neuen Projekt befindet sich nur ein Task "AppReportIOB". Hier müssen die zwei markierten Einträge angepasst werden. Eure lokale ioBroker IP-Adresse (ggf. Simple-API Port) und die JavaScript-Instanz, unter der ihr das FireTV-Skript laufen habt.
-  <img src="./ReadMe_Images/app_config.jpg" width="150">
+  
+  <img src="./ReadMe_Images/task_modification.jpg" width="400">
 
 - Ist die Anpassung fertig, kann das Projekt als App exportiert werden. Einfach das Projekt-Icon gedrückt halten, bis das Kontextmenü sichtbar wird. Hier "Export" und danach "As App" auswählen. Tasker benötigt nun eine weitere App aus dem Playstore ( App Factory o.ä.). Wenn diese geladen ist, muss es wie folgt eingestellt werden.
-  ![Task Anpassungen](./ReadMe_Images/app_config.jpg)
+  <img src="./ReadMe_Images/app_config.jpg" width="400">
   Der App-Factory Vorgang wird gestartet, indem nundie Zurück-Taste auf dem Smartphone gedrückt wird.
   Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt. Diese kann nun auf dem FireTV installiert werden.
 
