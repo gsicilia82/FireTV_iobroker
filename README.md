@@ -6,6 +6,7 @@ Script zur Steuerung von FireTV Sticks
 
 * [Start](#start)
 * [Erläuterungen](#erläuterungen)
+* [Optimierung](#optimierung)
 * [ToDos](#todos)
 * [Changelog](#changelog)
 
@@ -70,6 +71,48 @@ Anbei ein paar Worte zu den verschiedenen States:
 Übersicht der verschiedenen States:
 
 ![States Übersicht](./ReadMe_Images/states_overview.png)
+
+
+
+---
+
+## Optimierung
+
+Auf meinen FireTVs habe ich eine App installiert, die sofort die laufende App an ioBroker übermittelt. Dafür sind folgende Voraussetzungen zu erfüllen:
+
+- Android Smartphone mit Tasker (nur für Konfiguration der späteren App)
+
+- Simple-API Instanz auf ioBroker muss laufen
+
+- Fähigkeit eine App als .*apk auf dem FireTV zu installieren
+
+
+
+Kurz erklärt sind die folgenden Schritte notwendig:
+
+- Import eines Tasker Projekts
+
+- Minimale Anpassen des Projekts
+
+- Export des Projekts als App
+
+- Installation der App auf dem FireTV
+
+
+
+In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden, die in Tasker importiert werden muss.
+
+- Import eines Projekt erfolgt, indem lange auf das Haus-Symbol gedrückt wird, anschließend "Import Project" auswählen. Anschließend das hier geladene Projekt-File auswählen
+
+- Im neuen Projekt befindet sich nur ein Task "AppReportIOB". Hier müssen die zwei markierten Einträge angepasst werden. Eure lokale ioBroker IP-Adresse (ggf. Simple-API Port) und die JavaScript-Instanz, unter der ihr das FireTV-Skript laufen habt.
+  ![App Konfiguration](./ReadMe_Images/app_config.jpg)
+
+- Ist die Anpassung fertig, kann das Projekt als App exportiert werden. Einfach das Projekt-Icon gedrückt halten, bis das Kontextmenü sichtbar wird. Hier "Export" und danach "As App" auswählen. Tasker benötigt nun eine weitere App aus dem Playstore ( App Factory o.ä.). Wenn diese geladen ist, muss es wie folgt eingestellt werden.
+  ![Task Anpassungen](./ReadMe_Images/task_modification.jpg)
+  Der App-Factory Vorgang wird gestartet, indem nundie Zurück-Taste auf dem Smartphone gedrückt wird.
+  Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt. Diese kann nun auf dem FireTV installiert werden.
+
+- Das FireTV Skript aus diesem Repo prüft ob die App installiert ist (deshalb bitte identischen Name "com.iobroker.onfire" verwenden) und startet die App automatisch. Außerdem wird das Recht erteilt, die aktuell laufende App zu ermitteln.
 
 ***
 
