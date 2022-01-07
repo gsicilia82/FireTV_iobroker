@@ -72,8 +72,6 @@ Anbei ein paar Worte zu den verschiedenen States:
 
 ![States Übersicht](./ReadMe_Images/states_overview.png)
 
-
-
 ---
 
 ## Optimierung
@@ -86,8 +84,6 @@ Auf meinen FireTVs habe ich eine App installiert, die sofort die laufende App an
 
 - Fähigkeit eine App als .*apk auf dem FireTV zu installieren
 
-
-
 Kurz erklärt sind die folgenden Schritte notwendig:
 
 - Import eines Tasker Projekts
@@ -98,17 +94,15 @@ Kurz erklärt sind die folgenden Schritte notwendig:
 
 - Installation der App auf dem FireTV
 
-
-
 In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden, die in Tasker importiert werden muss.
 
-- Import eines Projekt erfolgt, indem lange auf das Haus-Symbol gedrückt wird, anschließend "Import Project" auswählen. Anschließend das hier geladene Projekt-File auswählen
+- Import eines Projekt erfolgt, indem auf der Tasker-Startseite lange auf das Haus-Symbol gedrückt wird, anschließend "Import Project" auswählen. Anschließend das hier geladene Projekt-File auswählen
 
 - Im neuen Projekt befindet sich nur ein Task "AppReportIOB". Hier müssen die zwei markierten Einträge angepasst werden. Eure lokale ioBroker IP-Adresse (ggf. Simple-API Port) und die JavaScript-Instanz, unter der ihr das FireTV-Skript laufen habt.
-  ![App Konfiguration](./ReadMe_Images/app_config.jpg)
+  <img src="./ReadMe_Images/app_config.jpg" width="150">
 
 - Ist die Anpassung fertig, kann das Projekt als App exportiert werden. Einfach das Projekt-Icon gedrückt halten, bis das Kontextmenü sichtbar wird. Hier "Export" und danach "As App" auswählen. Tasker benötigt nun eine weitere App aus dem Playstore ( App Factory o.ä.). Wenn diese geladen ist, muss es wie folgt eingestellt werden.
-  ![Task Anpassungen](./ReadMe_Images/task_modification.jpg)
+  ![Task Anpassungen](./ReadMe_Images/app_config.jpg)
   Der App-Factory Vorgang wird gestartet, indem nundie Zurück-Taste auf dem Smartphone gedrückt wird.
   Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt. Diese kann nun auf dem FireTV installiert werden.
 
