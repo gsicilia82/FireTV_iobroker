@@ -106,7 +106,7 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
 
   <img src="./ReadMe_Images/app_config.jpg" width="400">
   
-  Der App-Factory Vorgang wird gestartet, indem nundie Zurück-Taste auf dem Smartphone gedrückt wird.
+  Der App-Factory Vorgang wird gestartet, indem nun die Zurück-Taste auf dem Smartphone gedrückt wird.
   Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt. Diese kann nun auf dem FireTV installiert werden.
 
 - Das FireTV Skript aus diesem Repo prüft ob die App installiert ist (deshalb bitte identischen Name "com.iobroker.onfire" verwenden) und startet die App automatisch. Außerdem wird das Recht erteilt, die aktuell laufende App zu ermitteln.
