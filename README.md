@@ -103,19 +103,18 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
   <img src="./ReadMe_Images/task_modification.jpg" width="400">
 
 - Ist die Anpassung fertig, kann das Projekt als App exportiert werden. Einfach das Projekt-Icon gedrückt halten, bis das Kontextmenü sichtbar wird. Hier "Export" und danach "As App" auswählen. Tasker benötigt nun eine weitere App aus dem Playstore ( App Factory o.ä.). Wenn diese geladen ist, muss es wie folgt eingestellt werden.
-
+  
   <img src="./ReadMe_Images/app_config.jpg" width="400">
   
-  Der App-Factory Vorgang wird gestartet, indem nun die Zurück-Taste auf dem Smartphone gedrückt wird.
-  Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt. Diese kann nun auf dem FireTV installiert werden.
+  Der App-Factory Vorgang wird gestartet, indem nun die Zurück-Taste auf dem Smartphone gedrückt wird. Die neue App wird unter Sdcard/Tasker/factory/kids abgelegt.
 
-- Das FireTV Skript aus diesem Repo prüft ob die App installiert ist (deshalb bitte identischen Name "com.iobroker.onfire" verwenden) und startet die App automatisch. Außerdem wird das Recht erteilt, die aktuell laufende App zu ermitteln.
+- Die App `ioBrokerOnFire.apk` kann unter genau diesem Namen im Ordner /opt/iobroker abgelegt werden. Das Skript schaut in diesem Ordner nach der App und installiert diese automatisch. Alternativ kann die App natürlich manuell installiert werden.
+
+- Das FireTV Skript aus diesem Repo prüft ob die App installiert ist (deshalb bitte identischen Package Namen "com.iobroker.onfire" verwenden) und startet die App automatisch. Außerdem wird das Recht erteilt, die aktuell laufende FireTV-App zu ermitteln.
 
 ***
 
 ## ToDo's
-
-* Check ob adb lokal abgelegt wurde!
 
 * Direkte Eingabe von Befehlen für Shell-Konsole ermöglichen
 
@@ -125,13 +124,18 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
 
 ## Changelog
 
+**Changelog v0.0.15 08.01.2022**
+
+- App ioBrokerOnFire.apk will be installed automatically, if found in path /opt/iobroker
+- Handling from multiple tasks optimized
+
 **Changelog v0.0.14 06.01.2022**
 
 - Script classes optimized
 
 **Changelog v0.0.13 05.01.2022**
 
-- Scripts starts custom App "com.iobroker.onfire" on FireTV at established connection. Actual running package will be pushed automatically
+- Scripts starts custom App "com.iobroker.onfire" on FireTV at established connection. Actual running package will be pushed automatically from app
 
 **Changelog v0.0.10 04.01.2022**
 
