@@ -81,8 +81,8 @@ Auf meinen FireTVs habe ich eine App installiert, die sofort die laufende App an
 - Android Smartphone mit Tasker (nur für Konfiguration der späteren App)
 
 - Simple-API Instanz auf ioBroker muss laufen
-
-- Fähigkeit eine App als .*apk auf dem FireTV zu installieren
+  
+  
 
 Kurz erklärt sind die folgenden Schritte notwendig:
 
@@ -93,6 +93,8 @@ Kurz erklärt sind die folgenden Schritte notwendig:
 - Export des Projekts als App
 
 - Installation der App auf dem FireTV
+
+- 
 
 In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden, die in Tasker importiert werden muss.
 
