@@ -29,9 +29,8 @@ const fs = require("fs");
 
 
 // Version of Script
-let thisMajor = 0;
-let thisMinor = 1;
-let thisPatch = 0;
+let version = "v0.1.0";
+
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
@@ -46,8 +45,6 @@ let client = null;
 
 let Devices = [];
 let MainSubscribtion = null;
-
-let thisVersion = `v${thisMajor}.${thisMinor}.${thisPatch}`
 
 let maxShellLogOutLength = 500;
 
@@ -70,16 +67,16 @@ function checkUpdate(){
     request( { url: urlGithub, headers: { 'User-Agent': 'request'} }, (error, response, result) => {
         console.log( "Checking for Script Update...");
         let latest = JSON.parse( result).pop().ref.split("/")[2];
-        let splitLatest = latest.substring(1).split(".");
-        let major = parseInt( splitLatest[0] );
-        let minor = parseInt( splitLatest[1] );
-        let patch = parseInt( splitLatest[2] );
-        if ( major > thisMajor || minor > thisMinor || patch > thisPatch) {
+        let splitServVers = latest.substring(1).split(".").map( Number );
+        let serverVersion = splitServVers[0] * 1e6 + splitServVers[1] * 1e3 + splitServVers[2];
+        let splitThisVers = version.substring(1).split(".").map( Number );
+        let thisVersion   = splitThisVers[0] * 1e6 + splitThisVers[1] * 1e3 + splitThisVers[2];
+        if ( serverVersion > thisVersion){
             console.log( "Script Update available to version: " + latest);
             setState( praefixStates + "UpdateAvailable", true);
         } else {
             console.log( "No Script Update available.");
-            setState( praefixStates + "UpdateAvailable", false, true);
+            setState( praefixStates + "UpdateAvailable", false);
         }
     }).on("error", err => {
         console.warn( "Error on checking for updates:");
@@ -592,7 +589,7 @@ class FireTV {
             if ( this.Apps.hasOwnProperty( "com.iobroker.onfire")){
                 console.log( `Found installed package "com.iobroker.onfire" on device "${this.name}" (${this.ip}).`)
                 this.shell( "pm grant com.iobroker.onfire android.permission.PACKAGE_USAGE_STATS")
-                    .then( () => this.startApp( "com.iobroker.onfire") )
+                    .then( () => this.startApp( "com.iobroker.onfire", true) )
                     .then( () => resolve( true) )
                     .catch( err => reject( err) )
             } else {
@@ -603,7 +600,7 @@ class FireTV {
                         .then( () => console.log( `App "ioBrokerOnFire.apk" (Package name: com.iobroker.onfire) installed successfull on device "${this.name}" (${this.ip})! Starting it now ...`) )
                         .then( () => this.shell( "pm grant com.iobroker.onfire android.permission.PACKAGE_USAGE_STATS") )
                         .then( () => this.get3rdPartyPackages() )
-                        .then( () => this.startApp( "com.iobroker.onfire") )
+                        .then( () => this.startApp( "com.iobroker.onfire", true) )
                         .then( () => resolve( true) )
                         .catch( err => reject( err) )
                 } else {
@@ -618,19 +615,7 @@ class FireTV {
         return this.shell( "input keyevent " + keyEvent)
     }
 
-/*
-    startAppOld( packName){
-        console.log( `Starting package "${packName}" on device "${this.name}" (${this.ip}).`);
-        if( this.Apps.hasOwnProperty( packName)){
-            return this.shell( ` monkey --pct-syskeys 0 -p ${packName} 1`)
-                        .then( () => sleep( 1000) )
-                        .then( () => this.setForegroundApp() )
-        }
-        else return Promise.reject( "Package Name not found in predefined Apps!")
-    }
-*/
-
-    startApp( packName){
+    startApp( packName, withoutCheck=false){
         return new Promise((resolve, reject) => {
             console.log( `Starting package "${packName}" on device "${this.name}" (${this.ip}).`);
             if( this.Apps.hasOwnProperty( packName)){
@@ -638,7 +623,7 @@ class FireTV {
                     .then( () => sleep( 1000) )
                     .then( () => this.setForegroundApp() )
                     .then( runningApp => {
-                        if ( runningApp === packName){
+                        if ( runningApp === packName || withoutCheck){
                             resolve( packName)
                         }
                         // Sometimes, Kodi doesn't start at first attempt when not stopped properly before (e.g. by only pressing Home button)
@@ -805,9 +790,9 @@ let BasicStates = {
     },
     Version: {
         id: praefixStates + "Version",
-        initial: thisVersion,
+        initial: version,
         forceCreation: true,
-        common: { role: "state", read: true, write: true, name: "Script Version", type: "string" },
+        common: { role: "state", read: true, write: false, name: "Script Version", type: "string" },
         native: {}
     },
     Devices: {
