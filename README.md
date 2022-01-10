@@ -31,9 +31,11 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
   
   * ADB-Pfad in State `javascript.X.FireTV.ADB_Path` eingeben/korrigieren
   
-  * Eigene FireTV Geräte in State `javascript.X.FireTV.Devices` als JSON-String eingeben. Zwei <u>Beispiele</u> sind bereits hinterlegt (Fake-IPs).
+  * Eigene FireTV Geräte in State `javascript.X.FireTV.Devices` als JSON-String eingeben. Bitte beachtet die JSON-Notation; ein trennendes Komma-Zeichen wird nur zwischen mehreren Einträgen benötigt, nicht am Ende. Wenn es nur ein Eintrag ist, dann würde es so aussehen:
+    `{  "Wohnzimmer": "192.168.192.55"}`
+    Zwei <u>Beispiele</u> sind bereits hinterlegt (Fake-IPs).
   
-  * Für jedes hinterlegte FireTV Gerät werden zusätzliche States angelegt 
+  * Für jedes hinterlegte FireTV Gerät werden automatisch entsprechende States angelegt 
   
   * Wenn die eigenen Geräte korrekt hinterlegt wurden, versucht das Skript nun über ADB zu verbinden. Beim erstamligen Verbindungsversuch erscheint am TV ein PopUp, dass dauerhaft bestätigt werden muss (Checkbox in PopUp anwählen, sonst erfolgt diese Meldung immer wieder)
 
