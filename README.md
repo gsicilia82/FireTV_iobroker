@@ -29,7 +29,7 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
   
   * Erste States werden unter `javascript.X.FireTV` erstellt
   
-  * ADB-Pfad in State `javascript.X.FireTV.ADB_Path` eingeben/korrigieren
+  * Pfad zu lokal abgelegter `adb` in State `javascript.X.FireTV.ADB_Path` eingeben/korrigieren
   
   * Eigene FireTV Geräte in State `javascript.X.FireTV.Devices` als JSON-String eingeben. Bitte beachtet die JSON-Notation; ein trennendes Komma-Zeichen wird nur zwischen mehreren Einträgen benötigt, nicht am Ende. Wenn es nur ein Eintrag ist, dann würde es so aussehen:
     `{  "Wohnzimmer": "192.168.192.55"}`
@@ -39,7 +39,7 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
   
   * Wenn die eigenen Geräte korrekt hinterlegt wurden, versucht das Skript nun über ADB zu verbinden. Beim erstamligen Verbindungsversuch erscheint am TV ein PopUp, dass dauerhaft bestätigt werden muss (Checkbox in PopUp anwählen, sonst erfolgt diese Meldung immer wieder)
 
-* Falls Github Updates für Skript vorliegen, wird es in State `javascript.X.FireTV.UpdateAvailable` angezeigt
+* Falls auf Github Updates für dieses Skript vorliegen, wird es im State `javascript.X.FireTV.UpdateAvailable` angezeigt. So bleibt ihr up to date...
 
 ---
 
@@ -68,7 +68,8 @@ Anbei ein paar Worte zu den verschiedenen States:
 
 * FireTV.192_168_Y_Z.**State_Trigger**
   
-  * Mit diesem Button kann das Auslesen vom Status manuell angestoßen werden. Auch die aktuell laufende App wird aktualisiert
+  * Mit diesem Button kann das Auslesen vom Status manuell angestoßen werden. Auch die aktuell laufende App wird aktualisiert.
+    
 
 Übersicht der verschiedenen States:
 
@@ -88,7 +89,7 @@ Kurz erklärt sind die folgenden Schritte notwendig:
 
 - Import eines Tasker Projekts
 
-- Minimale Anpassen des Projekts
+- Minimales Anpassen des Projekts
 
 - Export des Projekts als App
 
@@ -111,6 +112,10 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
 - Die App `ioBrokerOnFire.apk` kann unter genau diesem Namen im Ordner /opt/iobroker abgelegt werden. Das Skript schaut in diesem Ordner nach der App und installiert diese automatisch. Alternativ kann die App natürlich manuell installiert werden.
 
 - Das FireTV Skript aus diesem Repo prüft ob die App installiert ist (deshalb bitte identischen Package Namen "com.iobroker.onfire" verwenden) und startet die App automatisch. Außerdem wird das Recht erteilt, die aktuell laufende FireTV-App zu ermitteln.
+
+
+
+Leider habe ich noch keinen Weg gefunden, über Tasker auch die media_sessions auszulesen bzw. auf media events zu reagieren (für play/pause/idle). Wenn das klappen würde, bräuchte man gar kein polling mehr seitens ioBroker.
 
 ***
 
