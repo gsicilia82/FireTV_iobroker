@@ -30,8 +30,8 @@ const fs = require("fs");
 
 // Version of Script
 let thisMajor = 0;
-let thisMinor = 0;
-let thisPatch = 15;
+let thisMinor = 1;
+let thisPatch = 0;
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
@@ -618,7 +618,8 @@ class FireTV {
         return this.shell( "input keyevent " + keyEvent)
     }
 
-    startApp( packName){
+/*
+    startAppOld( packName){
         console.log( `Starting package "${packName}" on device "${this.name}" (${this.ip}).`);
         if( this.Apps.hasOwnProperty( packName)){
             return this.shell( ` monkey --pct-syskeys 0 -p ${packName} 1`)
@@ -626,6 +627,40 @@ class FireTV {
                         .then( () => this.setForegroundApp() )
         }
         else return Promise.reject( "Package Name not found in predefined Apps!")
+    }
+*/
+
+    startApp( packName){
+        return new Promise((resolve, reject) => {
+            console.log( `Starting package "${packName}" on device "${this.name}" (${this.ip}).`);
+            if( this.Apps.hasOwnProperty( packName)){
+                this.shell( ` monkey --pct-syskeys 0 -p ${packName} 1`)
+                    .then( () => sleep( 1000) )
+                    .then( () => this.setForegroundApp() )
+                    .then( runningApp => {
+                        if ( runningApp === packName){
+                            resolve( packName)
+                        }
+                        // Sometimes, Kodi doesn't start at first attempt when not stopped properly before (e.g. by only pressing Home button)
+                        else {
+                            console.log( `Starting package "${packName}" on device "${this.name}" (${this.ip}). 2nd and last attempt!`);
+                            this.shell( ` monkey --pct-syskeys 0 -p ${packName} 1`)
+                                .then( () => sleep( 1000) )
+                                .then( () => this.setForegroundApp() )
+                                .then( runningApp2nd => {
+                                    if ( runningApp2nd === packName){
+                                        resolve( packName)
+                                    }
+                                    else {
+                                        reject( `Starting package "${packName}" on device "${this.name}" (${this.ip}) failed. Still running "${runningApp2nd}" !!!`)
+                                    }
+                                });
+                        }
+                    })
+                    .catch( err => reject( err) )
+            }
+            else reject( "Package Name not found in predefined Apps!")
+        });
     }
 
     stopApp( packName){
