@@ -122,40 +122,6 @@ In diesem Repo ist unter ./Optional/Tasker_Projekt eine Projekt-Datei zu finden,
 
 ## Changelog
 
-**Changelog v0.0.15 08.01.2022**
+**Changelog v0.1.0 10.01.2022**
 
-- App ioBrokerOnFire.apk will be installed automatically, if found in path /opt/iobroker
-- Handling from multiple tasks optimized
-
-**Changelog v0.0.14 06.01.2022**
-
-- Script classes optimized
-
-**Changelog v0.0.13 05.01.2022**
-
-- Scripts starts custom App "com.iobroker.onfire" on FireTV at established connection. Actual running package will be pushed automatically from app
-
-**Changelog v0.0.10 04.01.2022**
-
-- Script optimized regarding states handling
-
-**Changelog v0.0.8 02.01.2022**
-
-- Bugfix createState() in case of REDIS database
-* Intervall statt Schedules für Prüfung der Verbindung und Status der Geräte
-* Verschiedene Error-Handlings, wenn Gerät Offline geht
-* Verschiedene States gelöscht und neu hinzugefügt
-
-**Changelog v0.0.5 19.12.2021**
-
-- Connected Status über DeviceTracker ermitteln
-- Status UND RunningPackage im Intervall auslesen
-
-**Changelog v0.0.2 14.12.2021**
-
-- Automatische Online Prüfung ob Update vorliegt
-
-**Changelog v0.0.1 14.12.2021**
-
-* Erste Version...
-* Unterkategorie "Console" in Objekten noch ohne Funktion
+- First official release
