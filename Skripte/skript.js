@@ -29,7 +29,7 @@ const fs = require("fs");
 
 
 // Version of Script
-let version = "v0.1.0";
+let version = "v0.1.1";
 
 
 let praefixStates = `javascript.${instance}.FireTV.`;
@@ -73,10 +73,10 @@ function checkUpdate(){
         let thisVersion   = splitThisVers[0] * 1e6 + splitThisVers[1] * 1e3 + splitThisVers[2];
         if ( serverVersion > thisVersion){
             console.log( "Script Update available to version: " + latest);
-            setState( praefixStates + "UpdateAvailable", true);
+            setState( praefixStates + "UpdateAvailable", true, true);
         } else {
             console.log( "No Script Update available.");
-            setState( praefixStates + "UpdateAvailable", false);
+            setState( praefixStates + "UpdateAvailable", false, true);
         }
     }).on("error", err => {
         console.warn( "Error on checking for updates:");
@@ -86,14 +86,14 @@ function checkUpdate(){
 let SchedUpdate = schedule("0 16 * * *", checkUpdate);
 
 
-function pushStates( JsStates, cb) {
+function pushStatesJs( JsStates, cb) {
     let actStateName, State;
     let create = () => {
         createState( State.id, State.common, State.native, () => {
             setTimeout( ()=>{ 
                 if ( getState( State.id).val === null) setState( State.id, State.initial, true);
                 delete ownJsStates[ actStateName];
-                pushStates( ownJsStates, cb);
+                pushStatesJs( ownJsStates, cb);
             }, 200)
         });
     }
@@ -259,7 +259,7 @@ class States {
             this.StateSubs.push( completeID);
         });
 
-        pushStates( this.StateDef, () => {
+        pushStatesJs( this.StateDef, () => {
             if (dbglog()) console.log(`States created for device "${this.FireTV.name}" (${this.FireTV.ip})`);
             this.subscribe();
             this.FireTV.init();
@@ -298,7 +298,7 @@ class States {
         };
         ToUpdate.StartPackage.common.states = ToUpdate.StopPackage.common.states = this.FireTV.Apps;
 
-        pushStates( ToUpdate, () => {
+        pushStatesJs( ToUpdate, () => {
             if (dbglog()) console.log(`Package states (Start/Stop) updated for device "${this.FireTV.name}" (${this.FireTV.ip})`);
         });
 
@@ -874,7 +874,7 @@ function main() {
 }
 
 // Create basic states and call main function
-pushStates( BasicStates, () => {
+pushStatesJs( BasicStates, () => {
 
     MainSubscribtion = on({id: [ praefixStates + "Devices", praefixStates + "ADB_Path", praefixStates + "RestartScript", praefixStates + "Timing.CheckIfConnected", praefixStates + "Timing.CheckIfNotConnected"], change: "ne", ack: false}, function (obj) {
         let triggeredState = obj.id.split(".").pop();
