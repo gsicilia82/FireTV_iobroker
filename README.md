@@ -10,6 +10,11 @@ Script zur Steuerung von FireTV Sticks
 * [ToDos](#todos)
 * [Changelog](#changelog)
 
+
+Eine Übersicht der verschiedenen States:
+
+![States Übersicht](./ReadMe_Images/states_overview.png)
+
 ## Start
 
 Am FireTV Stick muss das ADB-Debugging aktiviert werden unter:
@@ -84,9 +89,6 @@ Anbei ein paar Worte zu den verschiedenen States:
   
   * Mit diesem Button kann das Auslesen vom Status manuell angestoßen werden. Auch die aktuell laufende App wird aktualisiert.
 
-Übersicht der verschiedenen States:
-
-![States Übersicht](./ReadMe_Images/states_overview.png)
 
 ---
 
