@@ -13,7 +13,7 @@ Script zur Steuerung von FireTV Sticks
 
 Eine Übersicht der verschiedenen States:
 
-![States Übersicht](./ReadMe_Images/states_overview.png)
+![States Übersicht](./ReadMe_Images/states_example.png)
 
 ## Start
 
