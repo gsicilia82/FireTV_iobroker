@@ -1,4 +1,4 @@
-const adb = require('adbkit')
+const adb = require('adbkit');
 const request = require("request");
 const fs = require("fs");
 
@@ -29,12 +29,11 @@ const fs = require("fs");
 
 
 // Version of Script
-let version = "v0.1.1";
+let version = "v0.1.2";
 
 
 let praefixStates = `javascript.${instance}.FireTV.`;
 
-let DefaultAdbPath = "/your/adb/path";
 let DefaultDevices = '{ "Wohnzimmer": "192.168.0.0", "Schlafzimmer": "192.168.0.0"}';
 
 let stoppingScript = false;
@@ -421,6 +420,14 @@ class FireTV {
             if(dbglog()) console.log( `Actual connect state from Device "${this.name}" (${this.ip}): ${connected}`);
         }
         catch( err) {
+            if ( Object.keys( err).length !== 0){ // empty in case off powered off device; avoid error message in this case
+                try{
+                    if ( err.cmd === "adb start-server") console.error( `ADB server could not start. Is package "android-tools-adb" installed?!`)
+                    else console.error( err);
+                } catch ( err){
+                    console.error( err);
+                }
+            }
             if( !ignoreError){
                 console.warn( "CONNECTION_ERROR: " + err);
                 console.warn( `Device "${this.name}" (${this.ip}) not connected! Powered Off? Not authorized?`);
@@ -802,13 +809,6 @@ let BasicStates = {
         common: { role: "state", read: true, write: true, name: "Config your Devices", type: "string" },
         native: {}
     },
-    ADB_Path: {
-        id: praefixStates + "ADB_Path",
-        initial: DefaultAdbPath,
-        forceCreation: false,
-        common: { role: "state", read: true, write: true, name: "Config your Devices", type: "string" },
-        native: {}
-    },
     RestartScript: {
         id: praefixStates + "RestartScript",
         initial: false,
@@ -841,24 +841,8 @@ function main() {
         }
     }
 
-    // Validate ADB path
-    let adbPath = getState( praefixStates + "ADB_Path").val;
-    if ( adbPath === DefaultAdbPath){
-        console.warn( `ADB path in state "${praefixStates + "ADB_Path"}" is set to default. Please configure ADB path. Script will restart automatically by change of state!`);
-        abortMain = true;
-    }
-
-    // Check if ADB file exists in path
-    if ( !fs.existsSync( adbPath) ){
-        console.warn( `ADB file not found in path "${adbPath}". Path is set in state "${praefixStates + "ADB_Path"}". Please configure ADB path or copy ADB file to this path. Script will restart automatically if path is changed in state, otherwise restart mannually!`);
-        abortMain = true;
-    }
-
     if ( abortMain) return
-
-    client = adb.createClient({ bin: adbPath });
-
-    //deviceTracker();
+    client = adb.createClient();
     
     Object.keys( JsonDevices).forEach( device => {
         let ip = JsonDevices[ device];
@@ -876,7 +860,7 @@ function main() {
 // Create basic states and call main function
 pushStatesJs( BasicStates, () => {
 
-    MainSubscribtion = on({id: [ praefixStates + "Devices", praefixStates + "ADB_Path", praefixStates + "RestartScript", praefixStates + "Timing.CheckIfConnected", praefixStates + "Timing.CheckIfNotConnected"], change: "ne", ack: false}, function (obj) {
+    MainSubscribtion = on({id: [ praefixStates + "Devices", praefixStates + "RestartScript", praefixStates + "Timing.CheckIfConnected", praefixStates + "Timing.CheckIfNotConnected"], change: "ne", ack: false}, function (obj) {
         let triggeredState = obj.id.split(".").pop();
         console.log( "State changed: " + triggeredState + "; restarting Script...");
         // Reset State if button was pushed
