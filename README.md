@@ -22,7 +22,7 @@ Die nachfolgenden Schritte erfolgen am ioBroker:
   ![ADBKIT hinzufügen](./ReadMe_Images/adbkit.png)
 
 * Das Tool `adb` muss auf dem ioBroker Host installiert sein. Auf einem Standardsystem kann es wie folgt installiert werden:
-  `sudo apt-get install -y android-tools-adb`
+  ```sudo apt-get install -y android-tools-adb```
   Falls ioBroker im Docker Container von buanet läuft, kann das Paket mittels Variable installiert werden:
   
   ```yaml
