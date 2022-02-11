@@ -29,7 +29,7 @@ const fs = require("fs");
 
 
 // Version of Script
-let version = "v0.1.2";
+let version = "v0.1.3";
 
 
 let praefixStates = `javascript.${instance}.FireTV.`;
@@ -85,36 +85,15 @@ function checkUpdate(){
 let SchedUpdate = schedule("0 16 * * *", checkUpdate);
 
 
-function pushStatesJs( JsStates, cb) {
-    let actStateName, State;
-    let create = () => {
-        createState( State.id, State.common, State.native, () => {
-            setTimeout( ()=>{ 
-                if ( getState( State.id).val === null) setState( State.id, State.initial, true);
-                delete ownJsStates[ actStateName];
-                pushStatesJs( ownJsStates, cb);
-            }, 200)
-        });
-    }
+function pushStatesJs( JsStates, cb=null) {
     let ownJsStates = JSON.parse( JSON.stringify( JsStates));
-    if ( Object.keys( ownJsStates).length === 0){
-        cb();
-    } else {
-        let ArrStateNames = Object.keys( ownJsStates);
-        actStateName = ArrStateNames[0]
-        State = ownJsStates[ actStateName];
-        let exists = existsState( State.id);
-        // Workaround needed if REDIS is used! createState() with initial value not possible!
-        if ( exists && State.forceCreation){
-            deleteState( State.id, ()=>{
-                create();
-            });
-        } else {
-            create();
-        }
+    if ( Object.keys( ownJsStates).length === 0) cb && cb();
+    else {
+        let firstKey = Object.keys( ownJsStates)[0];
+        let state = ownJsStates[ firstKey];
+        createState( state.id, state.initial, state.forceCreation, state.common, state.native, () => { delete ownJsStates[ firstKey]; pushStates( ownJsStates, cb); });
     }
 }
-
 
 /**
  * ####################################################################################
@@ -169,84 +148,84 @@ class States {
             StartPackage: {
                 id: "Package.StartPackage",
                 initial: "",
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "state", read: true, write: true, name: `StartPackage ${this.FireTV.name}`, type: "string", states: {} },
                 native: {}
             },
             StopPackage: {
                 id: "Package.StopPackage",
                 initial: "",
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "state", read: true, write: true, name: `StopPackage ${this.FireTV.name}`, type: "string", states: {}},
                 native: {}
             },
             StopForegroundPackage: {
                 id: "Package.StopForegroundPackage",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `StopForegroundPackage ${this.FireTV.name}`, type: "boolean"},
                 native: {}
             },
             RunningPackage: {
                 id: "Package.RunningPackage",
                 initial: "",
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "state", read: true, write: true, name: `RunningPackage ${this.FireTV.name}`, type: "string"},
                 native: {}
             },
             ReadInstalledPackages: {
                 id: "Package.ReadInstalledPackages",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `ReadInstalledPackages ${this.FireTV.name}`, type: "boolean"},
                 native: {}
             },
             State: {
                 id: "State",
                 initial: "",
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "state", read: true, write: false, name: `Device State ${this.FireTV.name}`, type: "string"},
                 native: {}
             },
             State_Trigger: {
                 id: "State_Trigger",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `State_Trigger ${this.FireTV.name}`, type: "boolean"},
                 native: {}
             },
             PlayerStop: {
                 id: "PlayerStop",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `Stop Mediaplayer ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             PlayerPause: {
                 id: "PlayerPause",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `Pause/Play Mediaplayer ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             Reboot: {
                 id: "Reboot",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `Reboot ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             Sleep: {
                 id: "Sleep",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "button", read: true, write: true, name: `Sleep ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             },
             Connected: {
                 id: "Connected",
                 initial: false,
-                forceCreation: true,
+                forceCreation: false,
                 common: { role: "state", read: true, write: false, name: `Connection state ${this.FireTV.name}`, type: "boolean" },
                 native: {}
             }
@@ -291,16 +270,17 @@ class States {
     }
 
     updatePackageStates(){
-        let ToUpdate = {
-            StartPackage: this.StateDef.StartPackage,
-            StopPackage:  this.StateDef.StopPackage,
-        };
-        ToUpdate.StartPackage.common.states = ToUpdate.StopPackage.common.states = this.FireTV.Apps;
+        let id = this.StateDef.StartPackage.id;
+        let obj = getObject( id);
+        obj.common.states = this.FireTV.Apps;
+        setObject( id, obj);
 
-        pushStatesJs( ToUpdate, () => {
-            if (dbglog()) console.log(`Package states (Start/Stop) updated for device "${this.FireTV.name}" (${this.FireTV.ip})`);
-        });
+        id = this.StateDef.StopPackage.id;
+        obj = getObject( id);
+        obj.common.states = this.FireTV.Apps;
+        setObject( id, obj);
 
+        if (dbglog()) console.log(`Package states (Start/Stop) updated for device "${this.FireTV.name}" (${this.FireTV.ip})`);
     }
 
     write( jsKey, value, ack = true) {
@@ -611,7 +591,7 @@ class FireTV {
                         .then( () => resolve( true) )
                         .catch( err => reject( err) )
                 } else {
-                    console.log( `Optional "ioBrokerOnFire.apk" (Package name: com.iobroker.onfire) not installed on device "${this.name}" (${this.ip}) and not found in path "/opt/iobroker". Proceeding without ...`);
+                    if(dbglog()) console.log( `Optional "ioBrokerOnFire.apk" (Package name: com.iobroker.onfire) not installed on device "${this.name}" (${this.ip}) and not found in path "/opt/iobroker". Proceeding without ...`);
                     resolve( false)
                 }
             }
@@ -784,21 +764,21 @@ let BasicStates = {
     Log_Debug: {
         id: praefixStates + "Log_Debug",
         initial: false,
-        forceCreation: false,
+        forceCreation: true,
         common: { role: "state", read: true, write: true, name: "Acivate Debug Loglevel", type: "boolean" },
         native: {}
     },
     Update: {
         id: praefixStates + "UpdateAvailable",
         initial: false,
-        forceCreation: true,
+        forceCreation: false,
         common: { role: "state", read: true, write: false, name: "Script Update Available", type: "boolean" },
         native: {}
     },
     Version: {
         id: praefixStates + "Version",
         initial: version,
-        forceCreation: true,
+        forceCreation: false,
         common: { role: "state", read: true, write: false, name: "Script Version", type: "string" },
         native: {}
     },
@@ -812,7 +792,7 @@ let BasicStates = {
     RestartScript: {
         id: praefixStates + "RestartScript",
         initial: false,
-        forceCreation: true,
+        forceCreation: false,
         common: { role: "button", read: true, write: true, name: "Restart Script", type: "boolean"},
         native: {}
     }
