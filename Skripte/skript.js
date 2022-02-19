@@ -29,7 +29,7 @@ const fs = require("fs");
 
 
 // Version of Script
-let version = "v0.1.3";
+let version = "v0.2.0";
 
 
 let praefixStates = `javascript.${instance}.FireTV.`;
@@ -311,6 +311,7 @@ class FireTV {
         this.IntvlCheckState = null;
         this.Apps = {};
         this.States = new States( this);
+        this.ioBrokerOnFire = false;
     }
 
     init(){
@@ -385,7 +386,7 @@ class FireTV {
             .catch( err => { if(dbglog()) console.log( err) })
             .finally( ()=> {
                 this.disconnect( "checkStateAndPackage");
-                setTimeout( ()=> this.checkIsRunning = false, 1000);
+                setTimeout( ()=> this.checkIsRunning = false, 1000); // Allow next call from checkStateAndPackage
             });
     }
 
@@ -468,7 +469,7 @@ class FireTV {
             this.IntvlCheckState = null;
             this.States.unsubscribe();
             // disconnect bug in ADBKIT throws always error... therefore ignore error and resolve always
-            client.disconnect( this.id).catch( err => resolve( this.id) );
+            client.disconnect( this.id).then( () => resolve( this.id) ).catch( err => resolve( this.id) );
         });
     }
 
@@ -481,7 +482,7 @@ class FireTV {
             } else {
                 if(dbglog()) console.log( `Disconnect called from "${caller}" for "${this.name}" (${this.ip}). Disconnect executed.`);
                 // disconnect bug in ADBKIT throws always error... therefore ignore error and resolve always
-                client.disconnect( this.id).catch( err => resolve( this.id) );
+                client.disconnect( this.id).then( () => resolve( this.id) ).catch( err => resolve( this.id) );
             }
         });
     }
@@ -525,6 +526,7 @@ class FireTV {
 
     // Loop needed if App is started and needs time to be loaded (returns null at beginning)
     async setForegroundApp( attempts=2, waitAttempt=1000){
+        if ( this.ioBrokerOnFire) return Promise.resolve(); // If App is installed, this check not needed
         let foreGroundApp = "";
         do{
             try{
@@ -577,7 +579,10 @@ class FireTV {
                 console.log( `Found installed package "com.iobroker.onfire" on device "${this.name}" (${this.ip}).`)
                 this.shell( "pm grant com.iobroker.onfire android.permission.PACKAGE_USAGE_STATS")
                     .then( () => this.startApp( "com.iobroker.onfire", true) )
-                    .then( () => resolve( true) )
+                    .then( () => {
+                        this.ioBrokerOnFire = true;
+                        resolve( true);
+                    })
                     .catch( err => reject( err) )
             } else {
                 let apk = "/opt/iobroker/ioBrokerOnFire.apk";
@@ -588,7 +593,10 @@ class FireTV {
                         .then( () => this.shell( "pm grant com.iobroker.onfire android.permission.PACKAGE_USAGE_STATS") )
                         .then( () => this.get3rdPartyPackages() )
                         .then( () => this.startApp( "com.iobroker.onfire", true) )
-                        .then( () => resolve( true) )
+                        .then( () => {
+                            this.ioBrokerOnFire = true;
+                            resolve( true);
+                        })
                         .catch( err => reject( err) )
                 } else {
                     if(dbglog()) console.log( `Optional "ioBrokerOnFire.apk" (Package name: com.iobroker.onfire) not installed on device "${this.name}" (${this.ip}) and not found in path "/opt/iobroker". Proceeding without ...`);
