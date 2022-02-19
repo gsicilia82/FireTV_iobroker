@@ -786,7 +786,7 @@ let BasicStates = {
     Version: {
         id: praefixStates + "Version",
         initial: version,
-        forceCreation: false,
+        forceCreation: true,
         common: { role: "state", read: true, write: false, name: "Script Version", type: "string" },
         native: {}
     },
